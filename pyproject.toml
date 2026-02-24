@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vcbal-agent"
+version = "0.1.0"
+description = "A small skill-based AI agent"
+requires-python = ">=3.10"
+
+[project.scripts]
+hi = "cli:main"
+
+[tool.setuptools]
+py-modules = ["cli"]
