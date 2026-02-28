@@ -26,10 +26,22 @@ class WebSearchSkill(BaseSkill):
 
     def execute(self, query: str, max_results: int = 5) -> str:
         try:
+            import os
             from ddgs import DDGS
 
-            with DDGS() as ddgs:
-                results = list(ddgs.text(query, max_results=max_results))
+            # primp (Rust extension used by ddgs) prints an impersonate-version warning
+            # directly to OS-level stderr (fd 2), bypassing Python's logging module.
+            # Redirect fd 2 to devnull for the duration of the DDGS call to suppress it.
+            old_stderr_fd = os.dup(2)
+            devnull_fd = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull_fd, 2)
+            try:
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(query, max_results=max_results))
+            finally:
+                os.dup2(old_stderr_fd, 2)
+                os.close(old_stderr_fd)
+                os.close(devnull_fd)
 
             if not results:
                 from core.i18n import _
