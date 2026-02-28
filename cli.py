@@ -1,11 +1,12 @@
 import sys
 import subprocess
+from pathlib import Path
 
 
 def main():
     """hi vcbal 命令入口"""
-    python_path = r"F:\aiagent\.venv\Scripts\python.exe"
-    main_path = r"F:\aiagent\main.py"
+    python_path = sys.executable
+    main_path = Path(__file__).resolve().with_name("main.py")
 
     # 透传参数，比如 hi vcbal server → 启动 server 模式
     args = sys.argv[1:]
@@ -15,7 +16,7 @@ def main():
         args = args[1:]
 
     try:
-        subprocess.run([python_path, main_path] + args)
+        subprocess.run([python_path, str(main_path)] + args)
     except KeyboardInterrupt:
         pass
 
