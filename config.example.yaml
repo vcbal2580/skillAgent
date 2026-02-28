@@ -1,0 +1,76 @@
+# ============================================================
+# Skill Agent Configuration - EXAMPLE / TEMPLATE
+# ============================================================
+# Copy this file to config.yaml and fill in your API keys:
+#   cp config.example.yaml config.yaml
+# config.yaml is git-ignored and will never be committed.
+# ============================================================
+
+# UI language: 'zh' = Chinese, 'en' = English
+language: zh
+
+llm:
+  # Supported providers: openai / deepseek / zhipu / qwen / ollama (any OpenAI-compatible API)
+
+  # ---- OpenAI ----
+  # provider: "openai"
+  # api_key: "sk-..."                        # https://platform.openai.com/api-keys
+  # model: "gpt-4o-mini"
+
+  # ---- DeepSeek ----
+  # provider: "deepseek"
+  # api_key: "sk-..."                        # https://platform.deepseek.com
+  # base_url: "https://api.deepseek.com/v1"
+  # model: "deepseek-chat"
+
+  # ---- 智谱 GLM ----
+  # provider: "zhipu"
+  # api_key: "your-zhipu-api-key"            # https://open.bigmodel.cn
+  # base_url: "https://open.bigmodel.cn/api/paas/v4"
+  # model: "glm-4-flash"
+
+  # ---- 通义千问 (default) ----
+  provider: "qwen"
+  api_key: "your-dashscope-api-key"          # https://dashscope.aliyun.com  or env: DASHSCOPE_API_KEY
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen-plus"                         # qwen-turbo / qwen-plus / qwen-max / qwen-long
+  temperature: 0.7
+  max_tokens: 2048
+
+  # ---- Ollama (local) ----
+  # provider: "ollama"
+  # api_key: "ollama"                        # any non-empty string
+  # base_url: "http://localhost:11434/v1"
+  # model: "qwen2.5:7b"
+
+knowledge:
+  # ChromaDB persistent vector store path
+  persist_directory: "./data/chromadb"
+  collection_name: "personal_knowledge"
+  # Max results returned per semantic search
+  top_k: 5
+
+storage:
+  # SQLite conversation history path
+  db_path: "./data/agent.db"
+
+agent:
+  # System prompt sent to the LLM on every conversation
+  system_prompt: |
+    你是一个智能助手，名叫 SkillAgent。你可以：
+    1. 回答用户的各种问题
+    2. 联网搜索最新信息
+    3. 管理个人知识库（存储、检索、删除知识）
+    4. 查询日期时间等实用信息
+    
+    请用中文回答，保持简洁友好。当你不确定答案时，可以使用搜索工具查找。
+    当用户提供了想要记住的信息时，主动帮他们存入知识库。
+
+  # Max tool-call iterations per user turn
+  max_tool_calls: 5
+  # Conversation turns to retain in context
+  max_history: 20
+
+api:
+  host: "0.0.0.0"
+  port: 8000
