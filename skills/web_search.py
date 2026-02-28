@@ -1,5 +1,5 @@
 """
-Web search skill - uses DuckDuckGo for free web search.
+Web search skill - uses DuckDuckGo for free, API-key-free web search.
 """
 
 from skills.base import BaseSkill
@@ -7,17 +7,17 @@ from skills.base import BaseSkill
 
 class WebSearchSkill(BaseSkill):
     name = "web_search"
-    description = "搜索互联网获取最新信息。当你需要查找实时信息、新闻、或不确定的知识时使用。"
+    description = "Search the internet for up-to-date information. Use this when you need real-time data, news, or facts you are unsure about."
     parameters = {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "搜索关键词",
+                "description": "Search query keywords",
             },
             "max_results": {
                 "type": "integer",
-                "description": "最大返回结果数，默认5",
+                "description": "Maximum number of results, default 5",
                 "default": 5,
             },
         },
@@ -32,16 +32,17 @@ class WebSearchSkill(BaseSkill):
                 results = list(ddgs.text(query, max_results=max_results))
 
             if not results:
-                return "未找到相关搜索结果。"
+                from core.i18n import _
+                return _("No search results found.")
 
             formatted = []
             for i, r in enumerate(results, 1):
                 formatted.append(
                     f"{i}. **{r.get('title', 'N/A')}**\n"
                     f"   {r.get('body', 'N/A')}\n"
-                    f"   链接: {r.get('href', 'N/A')}"
+                    f"   URL: {r.get('href', 'N/A')}"
                 )
             return "\n\n".join(formatted)
 
         except Exception as e:
-            return f"搜索出错: {str(e)}"
+            return f"Search error: {e}"

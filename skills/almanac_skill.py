@@ -1,5 +1,6 @@
 """
-黄历技能（娱乐向） - 提供简化版宜忌、方位与日签。
+Almanac skill (entertainment) - provides a simplified daily almanac with
+auspicious/inauspicious activities, lucky directions, and a daily note.
 """
 
 import random
@@ -9,13 +10,13 @@ from skills.base import BaseSkill
 
 class AlmanacSkill(BaseSkill):
     name = "huangli_today"
-    description = "提供简化版黄历信息（宜/忌、吉位、日签），支持指定日期。"
+    description = "Provide a simplified daily almanac (auspicious/inauspicious activities, directions, daily note). Supports a specific date."
     parameters = {
         "type": "object",
         "properties": {
             "date": {
                 "type": "string",
-                "description": "可选，日期，格式 YYYY-MM-DD；不传则默认今天。",
+                "description": "Optional date in YYYY-MM-DD format; defaults to today.",
             },
         },
         "required": [],
@@ -49,10 +50,11 @@ class AlmanacSkill(BaseSkill):
         return datetime.strptime(date, "%Y-%m-%d")
 
     def execute(self, date: str = "") -> str:
+        from core.i18n import _
         try:
             dt = self._parse_date(date.strip() if date else None)
         except ValueError:
-            return "错误: date 格式应为 YYYY-MM-DD"
+            return _("Error: date format must be YYYY-MM-DD")
 
         seed = dt.year * 10000 + dt.month * 100 + dt.day
         rnd = random.Random(seed)
@@ -64,13 +66,13 @@ class AlmanacSkill(BaseSkill):
         note = rnd.choice(self.NOTES)
 
         return (
-            "【今日黄历（娱乐参考）】\n"
-            f"日期: {dt.strftime('%Y-%m-%d')}\n"
-            f"年干支: {self._ganzhi_year(dt.year)}\n"
-            f"宜: {'、'.join(yi)}\n"
-            f"忌: {'、'.join(ji)}\n"
-            f"财神方位: {cai_pos}\n"
-            f"喜神方位: {xi_pos}\n"
-            f"日签: {note}\n"
-            "提示: 内容为简化文化娱乐版本，不替代专业历法。"
+            _("【Today's Almanac (entertainment only)】") + "\n"
+            f"Date: {dt.strftime('%Y-%m-%d')}\n"
+            f"Year stem-branch: {self._ganzhi_year(dt.year)}\n"
+            f"Auspicious: {'\u3001'.join(yi)}\n"
+            f"Inauspicious: {'\u3001'.join(ji)}\n"
+            f"Wealth direction: {cai_pos}\n"
+            f"Joy direction: {xi_pos}\n"
+            f"Daily note: {note}\n"
+            + _("Note: Simplified cultural almanac for entertainment; does not replace a professional calendar.")
         )

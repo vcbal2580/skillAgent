@@ -23,10 +23,18 @@ class Agent:
         from skills.web_search import WebSearchSkill
         from skills.knowledge_skill import KnowledgeSkill
         from skills.datetime_skill import DateTimeSkill
+        from skills.divination_skill import DivinationSkill
+        from skills.tarot_career_skill import TarotCareerSkill
+        from skills.lucky_today_skill import LuckyTodaySkill
+        from skills.almanac_skill import AlmanacSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
         self.registry.register(DateTimeSkill())
+        self.registry.register(DivinationSkill())
+        self.registry.register(TarotCareerSkill())
+        self.registry.register(LuckyTodaySkill())
+        self.registry.register(AlmanacSkill())
 
     def chat(self, user_input: str) -> str:
         """
@@ -73,12 +81,13 @@ class Agent:
                     content=str(result),
                 )
 
-        # If we exhausted tool call iterations, get a final response without tools
+        # Exhausted tool-call iterations - ask LLM for a final answer without tools
+        from core.i18n import _
         response_msg = self.llm.chat(
             messages=self.context.get_messages(),
             tools=None,
         )
-        answer = response_msg.content or "抱歉，处理过程中遇到问题，请重试。"
+        answer = response_msg.content or _("Sorry, something went wrong. Please try again.")
         self.context.add_assistant_message(answer)
         return answer
 

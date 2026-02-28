@@ -39,6 +39,12 @@ class KnowledgeRequest(BaseModel):
 @app.on_event("startup")
 async def startup():
     global agent
+    # Initialise language-specific prompts (config already loaded by main.py)
+    from core.i18n import setup as i18n_setup
+    from core.prompt_loader import setup as prompt_setup
+    lang = config.get("language", "en")
+    i18n_setup(lang)
+    prompt_setup(lang)
     agent = Agent()
     agent.register_default_skills()
 

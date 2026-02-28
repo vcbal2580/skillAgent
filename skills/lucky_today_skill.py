@@ -1,5 +1,6 @@
 """
-今日好运技能（娱乐向） - 生成今日幸运指数与建议。
+Today's luck skill (entertainment) - generates a daily lucky index,
+lucky colour, lucky number, and action suggestion.
 """
 
 import random
@@ -9,13 +10,13 @@ from skills.base import BaseSkill
 
 class LuckyTodaySkill(BaseSkill):
     name = "today_luck"
-    description = "生成今日好运指数、幸运色、幸运数字和行动建议（娱乐参考）。"
+    description = "Generate today's lucky index, lucky colour, lucky number, and action suggestion (entertainment)."
     parameters = {
         "type": "object",
         "properties": {
             "name": {
                 "type": "string",
-                "description": "可选，姓名或昵称，用于个性化幸运结果。",
+                "description": "Optional name or nickname for personalised results.",
             },
         },
         "required": [],
@@ -38,6 +39,7 @@ class LuckyTodaySkill(BaseSkill):
         return date_seed + sum(ord(ch) for ch in name)
 
     def execute(self, name: str = "") -> str:
+        from core.i18n import _
         rnd = random.Random(self._seed(name))
         score = rnd.randint(60, 99)
         lucky_number = rnd.randint(1, 9)
@@ -45,16 +47,21 @@ class LuckyTodaySkill(BaseSkill):
         direction = rnd.choice(self.DIRECTIONS)
         action = rnd.choice(self.ACTIONS)
 
-        level = "大吉" if score >= 90 else "中吉" if score >= 75 else "小吉"
-        person = name if name.strip() else "你"
+        if score >= 90:
+            level = _("Great Fortune")
+        elif score >= 75:
+            level = _("Good Fortune")
+        else:
+            level = _("Mild Fortune")
+        person = name if name.strip() else "you"
 
         return (
-            "【今日好运（娱乐参考）】\n"
-            f"对象: {person}\n"
-            f"好运指数: {score}/100（{level}）\n"
-            f"幸运数字: {lucky_number}\n"
-            f"幸运色: {color}\n"
-            f"幸运方位: {direction}\n"
-            f"今日建议: {action}\n"
-            "提示: 结果仅供文化娱乐与自我激励。"
+            _("【Today's Luck (entertainment only)】") + "\n"
+            f"Subject: {person}\n"
+            f"Lucky index: {score}/100 ({level})\n"
+            f"Lucky number: {lucky_number}\n"
+            f"Lucky colour: {color}\n"
+            f"Lucky direction: {direction}\n"
+            f"Today's suggestion: {action}\n"
+            + _("Note: For cultural entertainment and self-motivation only.")
         )

@@ -8,7 +8,7 @@ import sys
 import os
 import argparse
 
-# Ensure project root is in path
+# Ensure project root is on sys.path when run directly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import config
@@ -20,14 +20,15 @@ def run_cli():
     from rich.markdown import Markdown
     from rich.panel import Panel
     from core.agent import Agent
+    from core.i18n import _
 
     console = Console()
 
     console.print(Panel.fit(
         "[bold cyan]SkillAgent[/bold cyan] v0.1.0\n"
-        "智能助手 - 支持联网搜索 | 知识库管理 | 可扩展技能\n\n"
-        "命令: [green]/help[/green] 帮助 | [green]/reset[/green] 重置对话 | "
-        "[green]/skills[/green] 技能列表 | [green]/quit[/green] 退出",
+        + _("AI Assistant - Web Search | Knowledge Base | Extensible Skills") + "\n\n"
+        + _("Commands: [green]/help[/green] help | [green]/reset[/green] reset | "
+            "[green]/skills[/green] skill list | [green]/quit[/green] exit"),
         title="🤖 Welcome",
         border_style="cyan",
     ))
@@ -43,80 +44,87 @@ def run_cli():
             if not user_input:
                 continue
 
-            # Handle commands
+            # Handle slash commands
             if user_input.startswith("/"):
                 cmd = user_input.lower()
                 if cmd in ("/quit", "/exit", "/q"):
-                    console.print("[dim]再见！👋[/dim]")
+                    console.print(f"[dim]{_('Goodbye! 👋')}[/dim]")
                     break
                 elif cmd == "/reset":
                     agent.reset()
-                    console.print("[yellow]对话已重置[/yellow]")
+                    console.print(f"[yellow]{_('Conversation reset')}[/yellow]")
                     continue
                 elif cmd == "/skills":
                     skills = agent.registry.list_skills()
                     console.print(Panel(
                         "\n".join(f"• {s}" for s in skills),
-                        title="已注册技能",
+                        title=_("Registered Skills"),
                         border_style="blue",
                     ))
                     continue
                 elif cmd == "/help":
                     console.print(Panel(
-                        "/help   - 显示帮助\n"
-                        "/reset  - 重置对话历史\n"
-                        "/skills - 显示已注册技能\n"
-                        "/quit   - 退出程序\n\n"
-                        "直接输入文字即可与助手对话。\n"
-                        "助手可以自动调用技能来联网搜索、管理知识库等。",
-                        title="帮助",
+                        _("/help   - Show help\n"
+                          "/reset  - Reset conversation history\n"
+                          "/skills - Show registered skills\n"
+                          "/quit   - Exit\n\n"
+                          "Type directly to chat with the assistant.\n"
+                          "The assistant can call skills for web search, knowledge management, etc."),
+                        title=_("Help"),
                         border_style="green",
                     ))
                     continue
                 else:
-                    console.print(f"[red]未知命令: {cmd}[/red]，输入 /help 查看帮助")
+                    console.print(f"[red]{cmd}[/red] - unknown command, type /help")
                     continue
 
-            # Chat with agent
-            with console.status("[bold cyan]思考中...[/bold cyan]", spinner="dots"):
+            # Send message to agent
+            with console.status(f"[bold cyan]{_('Thinking...')}[/bold cyan]", spinner="dots"):
                 reply = agent.chat(user_input)
 
             console.print()
             console.print(Markdown(reply), style="white")
 
         except KeyboardInterrupt:
-            console.print("\n[dim]按 /quit 退出[/dim]")
+            console.print(f"\n[dim]{_('Press /quit to exit')}[/dim]")
             continue
         except Exception as e:
-            console.print(f"[red]错误: {e}[/red]")
+            console.print(f"[red]Error: {e}[/red]")
             continue
 
 
 def run_server():
-    """Start the API server."""
+    """Start the FastAPI server."""
     from api.server import start_server
     start_server()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="SkillAgent - 智能技能助手")
+    parser = argparse.ArgumentParser(description="SkillAgent - AI Skill Assistant")
     parser.add_argument(
         "mode",
         nargs="?",
         default="cli",
         choices=["cli", "server"],
-        help="运行模式: cli=交互式命令行(默认), server=API服务器",
+        help="Running mode: cli=interactive CLI (default), server=API server",
     )
     parser.add_argument(
         "--config",
         default=None,
-        help="配置文件路径 (默认: config.yaml)",
+        help="Config file path (default: config.yaml)",
     )
 
     args = parser.parse_args()
 
-    # Load configuration
+    # Load config first so i18n can read the language setting
     config.load(args.config)
+
+    # Initialise i18n (UI strings) and prompt_loader (LLM-facing prompts)
+    from core.i18n import setup as i18n_setup
+    from core.prompt_loader import setup as prompt_setup
+    lang = config.get("language", "en")
+    i18n_setup(lang)
+    prompt_setup(lang)
 
     if args.mode == "server":
         print("Starting API server...")

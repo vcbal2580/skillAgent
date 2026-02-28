@@ -1,5 +1,6 @@
 """
-塔罗事业解读技能（娱乐向） - 抽牌并输出事业方向建议。
+Tarot career reading skill (entertainment) - draws cards and provides
+a career-focused interpretation using the Major Arcana.
 """
 
 import random
@@ -9,17 +10,17 @@ from skills.base import BaseSkill
 
 class TarotCareerSkill(BaseSkill):
     name = "tarot_career_reading"
-    description = "抽取塔罗牌并提供事业方向解读（娱乐参考）。"
+    description = "Draw tarot cards and provide a career-focused reading (entertainment only)."
     parameters = {
         "type": "object",
         "properties": {
             "question": {
                 "type": "string",
-                "description": "事业相关问题，例如：要不要换工作、如何升职、项目是否推进。",
+                "description": "Career-related question, e.g. should I change jobs, how to get promoted, should I proceed with a project.",
             },
             "cards": {
                 "type": "integer",
-                "description": "抽牌数量，支持 1 或 3，默认 3。",
+                "description": "Number of cards to draw: 1 or 3, default 3.",
                 "default": 3,
             },
         },

@@ -1,5 +1,7 @@
 """
-命理卜算技能（娱乐向） - 基于天干地支、五行、八卦做简要解读。
+Fortune divination skill (entertainment) - interprets questions using
+Heavenly Stems (Tian Gan), Earthly Branches (Di Zhi), Five Elements,
+and Eight Trigrams (Ba Gua).
 """
 
 from datetime import datetime
@@ -8,17 +10,17 @@ from skills.base import BaseSkill
 
 class DivinationSkill(BaseSkill):
     name = "fortune_divination"
-    description = "根据用户问题做命理卜算（天干地支、五行、八卦）并给出简要建议，适合娱乐参考。"
+    description = "Fortune divination (entertainment) - interprets a question using Heavenly Stems, Earthly Branches, Five Elements, and Eight Trigrams."
     parameters = {
         "type": "object",
         "properties": {
             "question": {
                 "type": "string",
-                "description": "想占问的问题，如事业、感情、财运等。",
+                "description": "The question to divine, e.g. career, relationships, finances.",
             },
             "year": {
                 "type": "integer",
-                "description": "可选，年份（用于辅助参考），如 1996。",
+                "description": "Optional birth year for reference, e.g. 1996.",
             },
         },
         "required": ["question"],
@@ -46,8 +48,9 @@ class DivinationSkill(BaseSkill):
         return base + date_factor + year_factor
 
     def execute(self, question: str, year: int | None = None) -> str:
+        from core.i18n import _
         if not question.strip():
-            return "错误: question 不能为空"
+            return _("Error: question cannot be empty")
 
         now = datetime.now()
         current_gz = self._ganzhi_year(now.year)
@@ -60,23 +63,24 @@ class DivinationSkill(BaseSkill):
         stem = current_gz[0]
         element = self.ELEMENT_BY_STEM.get(stem, "土")
 
+        # Element advice - Chinese cultural content; English translations available in .po
         element_advice = {
-            "木": "宜主动拓展、人脉经营，先布局后发力。",
-            "火": "宜提升曝光与表达，把握窗口期。",
-            "土": "宜稳中求进，重视执行和复盘。",
-            "金": "宜聚焦规则与效率，适合做减法。",
-            "水": "宜学习沉淀，借势而行，避免硬碰硬。",
+            "木": _("Expand proactively, focus on networking; plan before acting."),
+            "火": _("Boost visibility and communication; seize the window of opportunity."),
+            "土": _("Steady progress with execution; review and iterate."),
+            "金": _("Focus on rules and efficiency; simplify."),
+            "水": _("Learn and accumulate; ride the current, avoid head-on clashes."),
         }
 
-        year_text = f"\n参考年份干支: {self._ganzhi_year(year)}" if year else ""
+        year_text = f"\nReference year stem-branch: {self._ganzhi_year(year)}" if year else ""
 
         return (
-            "【命理卜算（娱乐参考）】\n"
-            f"占问: {question}\n"
-            f"今日年干支: {current_gz}{year_text}\n"
-            f"五行主气: {element}\n"
-            f"卦象: 上卦{upper} / 下卦{lower}\n"
-            f"动爻: 第{changing_line}爻\n"
-            f"解读: {element_advice[element]}\n"
-            "提示: 结果仅供文化娱乐与自我反思，不作为专业决策依据。"
+            _("【Fortune Divination (entertainment only)】") + "\n"
+            f"Question: {question}\n"
+            f"Current year stem-branch: {current_gz}{year_text}\n"
+            f"Five-Element qi: {element}\n"
+            f"Trigrams: upper {upper} / lower {lower}\n"
+            f"Changing line: {changing_line}\n"
+            f"Reading: {element_advice[element]}\n"
+            + _("Note: For cultural entertainment and self-reflection only, not professional advice.")
         )

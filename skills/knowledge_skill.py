@@ -9,8 +9,9 @@ from knowledge.knowledge_manager import KnowledgeManager
 class KnowledgeSkill(BaseSkill):
     name = "knowledge_manage"
     description = (
-        "管理个人知识库。可以保存新知识、搜索已有知识、列出所有知识、或删除知识条目。"
-        "当用户想记住某些信息、或者你需要查找之前存储的信息时使用。"
+        "Manage the personal knowledge base. Save new knowledge, search existing entries, "
+        "list all entries, or delete entries. Use when the user wants to remember something "
+        "or you need to retrieve previously stored information."
     )
     parameters = {
         "type": "object",
@@ -18,15 +19,15 @@ class KnowledgeSkill(BaseSkill):
             "action": {
                 "type": "string",
                 "enum": ["save", "search", "list", "delete"],
-                "description": "操作类型: save=保存知识, search=搜索知识, list=列出知识, delete=删除知识",
+                "description": "Operation: save=save knowledge, search=search knowledge, list=list all, delete=delete entry",
             },
             "content": {
                 "type": "string",
-                "description": "保存时：要保存的知识内容；搜索时：搜索查询；删除时：知识ID",
+                "description": "For save: text to store; for search: query string; for delete: knowledge ID",
             },
             "tags": {
                 "type": "string",
-                "description": "保存时可选的标签，用逗号分隔，如 'python,编程,技巧'",
+                "description": "Optional comma-separated tags, e.g. 'python,programming,tips'",
             },
         },
         "required": ["action"],
@@ -36,50 +37,55 @@ class KnowledgeSkill(BaseSkill):
         self.km = KnowledgeManager()
 
     def execute(self, action: str, content: str = "", tags: str = "") -> str:
+        from core.i18n import _
         try:
             if action == "save":
                 if not content:
-                    return "错误: 保存知识需要提供content参数"
+                    return _("Error: 'content' is required to save knowledge")
                 tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
                 doc_id = self.km.save(content=content, tags=tag_list)
-                return f"✅ 知识已保存 (ID: {doc_id})\n内容: {content[:100]}..."
+                return f"\u2705 Knowledge saved (ID: {doc_id})\nContent: {content[:100]}..."
 
             elif action == "search":
                 if not content:
-                    return "错误: 搜索知识需要提供content作为查询"
+                    return _("Error: 'content' is required as the search query")
                 results = self.km.search(content)
                 if not results:
-                    return "未找到相关知识。"
+                    return _("No related knowledge found.")
                 formatted = []
                 for r in results:
                     tags_str = r["metadata"].get("tags", "")
                     formatted.append(
                         f"- [ID: {r['id']}] {r['text'][:200]}"
-                        f"{f' (标签: {tags_str})' if tags_str else ''}"
+                        + (f" (tags: {tags_str})" if tags_str else "")
                     )
-                return f"找到 {len(results)} 条相关知识:\n" + "\n".join(formatted)
+                return f"Found {len(results)} related entries:\n" + "\n".join(formatted)
 
             elif action == "list":
                 items = self.km.list_all()
                 if not items:
-                    return "知识库为空。"
+                    return _("Knowledge base is empty.")
                 formatted = []
                 for item in items:
                     tags_str = item["metadata"].get("tags", "")
                     formatted.append(
                         f"- [ID: {item['id']}] {item['text'][:100]}"
-                        f"{f' (标签: {tags_str})' if tags_str else ''}"
+                        + (f" (tags: {tags_str})" if tags_str else "")
                     )
-                return f"知识库共 {len(items)} 条:\n" + "\n".join(formatted)
+                return f"Knowledge base has {len(items)} entries:\n" + "\n".join(formatted)
 
             elif action == "delete":
                 if not content:
-                    return "错误: 删除知识需要提供content参数作为知识ID"
+                    return _("Error: 'content' must be the knowledge ID to delete")
                 success = self.km.delete(content)
-                return f"✅ 知识 {content} 已删除" if success else f"❌ 删除失败，未找到ID: {content}"
+                return (
+                    f"\u2705 Knowledge '{content}' deleted"
+                    if success
+                    else f"\u274c Delete failed - ID not found: {content}"
+                )
 
             else:
-                return f"未知操作: {action}，支持: save/search/list/delete"
+                return _("Unknown action: %s. Supported: save / search / list / delete") % action
 
         except Exception as e:
-            return f"知识库操作出错: {str(e)}"
+            return f"Knowledge operation error: {e}"
