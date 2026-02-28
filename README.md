@@ -76,7 +76,13 @@ hi vcbal          # 启动 CLI 交互模式
 hi vcbal server   # 启动 API 服务器模式
 ```
 
-### 2. 配置
+### 3. 配置
+
+复制模板并填入 API Key：
+
+```bash
+cp config.example.yaml config.yaml
+```
 
 编辑 `config.yaml`，设置 LLM API：
 
@@ -104,7 +110,7 @@ llm:
   model: "deepseek-chat"
 ```
 
-### 3. 运行
+### 4. 运行
 
 **CLI 交互模式（默认）：**
 ```bash
