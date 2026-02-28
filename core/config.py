@@ -28,6 +28,13 @@ class Config:
         with open(config_path, "r", encoding="utf-8") as f:
             self._data = yaml.safe_load(f)
 
+        # If system_prompt is a file reference ("file:path/to/persona.md"),
+        # load the file content so users can maintain large prompts separately.
+        prompt = self._data.get("agent", {}).get("system_prompt", "")
+        if isinstance(prompt, str) and prompt.strip().startswith("file:"):
+            persona_path = Path(config_path).parent / prompt.strip()[5:].strip()
+            self._data["agent"]["system_prompt"] = persona_path.read_text(encoding="utf-8")
+
         # Override with environment variables
         self._apply_env_overrides()
         # Ensure data directories exist

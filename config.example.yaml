@@ -55,7 +55,11 @@ storage:
   db_path: "./data/agent.db"
 
 agent:
-  # System prompt sent to the LLM on every conversation
+  # System prompt sent to the LLM on every conversation.
+  # Option A: write inline (below)
+  # Option B: reference an external file:
+  #   system_prompt: "file:persona.md"
+  # persona.md is git-ignored so you can freely write personal context there.
   system_prompt: |
     你是一个智能助手，名叫 SkillAgent。你可以：
     1. 回答用户的各种问题
