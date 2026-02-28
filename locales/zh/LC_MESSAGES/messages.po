@@ -26,8 +26,8 @@ msgstr "对话已重置"
 msgid "Registered Skills"
 msgstr "已注册技能"
 
-msgid "/help   - Show help\n/reset  - Reset conversation history\n/skills - Show registered skills\n/quit   - Exit\n\nType directly to chat with the assistant.\nThe assistant can call skills for web search, knowledge management, etc."
-msgstr "/help   - 显示帮助\n/reset  - 重置对话历史\n/skills - 显示已注册技能\n/quit   - 退出程序\n\n直接输入文字即可与助手对话。\n助手可以自动调用技能来联网搜索、管理知识库等。"
+msgid "/help   - Show help\n/reset  - Reset conversation history\n/skills - Show registered skills\n/quit   - Exit (or press Ctrl+C twice)\n\nType directly to chat with the assistant.\nThe assistant can call skills for web search, knowledge management, etc."
+msgstr "/help   - 显示帮助\n/reset  - 重置对话历史\n/skills - 显示已注册技能\n/quit   - 退出（或连按两次 Ctrl+C）\n\n直接输入文字即可与助手对话。\n助手可以自动调用技能来联网搜索、管理知识库等。"
 
 msgid "Help"
 msgstr "帮助"
@@ -35,8 +35,8 @@ msgstr "帮助"
 msgid "Thinking..."
 msgstr "思考中..."
 
-msgid "Press /quit to exit"
-msgstr "按 /quit 退出"
+msgid "Press Ctrl+C again (or /quit) to exit"
+msgstr "再按一次 Ctrl+C（或输入 /quit）退出"
 
 msgid "SkillAgent - AI Skill Assistant"
 msgstr "SkillAgent - 智能技能助手"

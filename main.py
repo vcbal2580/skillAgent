@@ -36,10 +36,13 @@ def run_cli():
     agent = Agent()
     agent.register_default_skills()
 
+    _ctrl_c_count = 0  # track consecutive Ctrl+C presses
+
     while True:
         try:
             console.print()
             user_input = console.input("[bold green]You > [/bold green]").strip()
+            _ctrl_c_count = 0  # reset on successful input
 
             if not user_input:
                 continue
@@ -67,7 +70,7 @@ def run_cli():
                         _("/help   - Show help\n"
                           "/reset  - Reset conversation history\n"
                           "/skills - Show registered skills\n"
-                          "/quit   - Exit\n\n"
+                          "/quit   - Exit (or press Ctrl+C twice)\n\n"
                           "Type directly to chat with the assistant.\n"
                           "The assistant can call skills for web search, knowledge management, etc."),
                         title=_("Help"),
@@ -86,7 +89,11 @@ def run_cli():
             console.print(Markdown(reply), style="white")
 
         except KeyboardInterrupt:
-            console.print(f"\n[dim]{_('Press /quit to exit')}[/dim]")
+            _ctrl_c_count += 1
+            if _ctrl_c_count >= 2:
+                console.print(f"\n[dim]{_('Goodbye! 👋')}[/dim]")
+                break
+            console.print(f"\n[dim]{_('Press Ctrl+C again (or /quit) to exit')}[/dim]")
             continue
         except Exception as e:
             console.print(f"[red]Error: {e}[/red]")
