@@ -16,8 +16,8 @@ data/
 dist/
 build/
 
-# 配置中的敏感信息（如已写入 API Key）
-# config.yaml   # 如果含密钥，取消此行注释
+# 配置文件（含 API Key，不提交）
+config.yaml
 
 # IDE
 .vscode/
