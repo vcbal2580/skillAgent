@@ -41,49 +41,53 @@
 
 ## 快速开始
 
-### 1. 克隆 & 创建虚拟环境
+### 方式一：一键初始化（推荐）
+
+```bash
+git clone <repo-url>
+cd skillAgent
+```
+
+**Windows PowerShell：**
+```powershell
+.\scripts\setup.ps1
+```
+
+**macOS / Linux：**
+```bash
+bash scripts/setup.sh
+```
+
+脚本会自动完成：创建 `.venv` → 安装依赖 → 注册 `hi` 命令 → 复制 `config.example.yaml` → 提示填写 API Key。
+
+---
+
+### 方式二：手动步骤
 
 ```bash
 git clone <repo-url>
 cd skillAgent
 
-# 创建虚拟环境（推荐，避免污染全局 Python）
 python -m venv .venv
 
 # 激活（Windows PowerShell）
 .venv\Scripts\Activate.ps1
 # 激活（Linux / macOS）
 # source .venv/bin/activate
-```
 
-### 2. 安装依赖 & 注册 `hi` 命令
-
-```bash
-# 安装第三方依赖
 pip install -r requirements.txt
-
-# 以可编辑模式安装本项目 ← 这一步会在 .venv/Scripts/ 生成 hi.exe
-pip install -e .
+pip install -e .   # 生成 hi 命令
 ```
 
-> **原理**：`pyproject.toml` 的 `[project.scripts]` 中定义了 `hi = "cli:main"`，
-> `pip install -e .` 读取此配置，在当前虚拟环境的 `Scripts/` 目录生成 `hi.exe`（Windows）
-> 或 `hi`（Linux/macOS）。因为是 editable 模式，`hi` 始终指向仓库里的 `cli.py`，
-> 修改代码无需重新安装。
+> **原理**：`pyproject.toml` 的 `[project.scripts]` 定义了 `hi = "cli:main"`，
+> `pip install -e .` 在 `.venv/Scripts/` 生成 `hi.exe`（Windows）或 `hi`（Linux/macOS）。
+> editable 模式下修改代码无需重新安装。
 
-安装完成后可全局（在虚拟环境激活状态下）使用：
-
-```bash
-hi vcbal          # 启动 CLI 交互模式
-hi vcbal server   # 启动 API 服务器模式
-```
-
-### 3. 配置
-
-复制模板并填入 API Key：
+### 配置
 
 ```bash
 cp config.example.yaml config.yaml
+# 编辑 config.yaml，填入 API Key
 ```
 
 编辑 `config.yaml`，设置 LLM API：

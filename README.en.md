@@ -42,49 +42,53 @@ Supports web search, a personal knowledge base, and custom skill plugins.
 
 ## Quick Start
 
-### 1. Clone & create virtual environment
+### Option A: One-command setup (recommended)
+
+```bash
+git clone <repo-url>
+cd skillAgent
+```
+
+**Windows PowerShell:**
+```powershell
+.\scripts\setup.ps1
+```
+
+**macOS / Linux:**
+```bash
+bash scripts/setup.sh
+```
+
+The script handles everything: creates `.venv`, installs dependencies, registers the `hi` command, copies `config.example.yaml`, and reminds you to fill in your API key.
+
+---
+
+### Option B: Manual steps
 
 ```bash
 git clone <repo-url>
 cd skillAgent
 
-# Create a virtual environment (recommended)
 python -m venv .venv
 
 # Activate (Windows PowerShell)
 .venv\Scripts\Activate.ps1
 # Activate (Linux / macOS)
 # source .venv/bin/activate
-```
 
-### 2. Install dependencies & register the `hi` command
-
-```bash
-# Install third-party dependencies
 pip install -r requirements.txt
-
-# Install the project in editable mode ← this generates hi.exe in .venv/Scripts/
-pip install -e .
+pip install -e .   # generates the hi command
 ```
 
 > **How it works**: `pyproject.toml` defines `hi = "cli:main"` under `[project.scripts]`.
-> Running `pip install -e .` generates `hi.exe` (Windows) or `hi` (Linux/macOS) inside the
-> active virtual environment. Because it is an editable install, `hi` always points to
-> `cli.py` in the repository — no reinstall needed after code changes.
+> `pip install -e .` generates `hi.exe` (Windows) or `hi` (Linux/macOS) inside `.venv/Scripts/`.
+> Because it is an editable install, code changes take effect immediately — no reinstall needed.
 
-After installation, use the `hi` command anywhere (while the venv is active):
-
-```bash
-hi vcbal          # start interactive CLI mode
-hi vcbal server   # start API server mode
-```
-
-### 3. Configure
-
-Copy the template and fill in your API key:
+### Configure
 
 ```bash
 cp config.example.yaml config.yaml
+# Edit config.yaml and fill in your API key
 ```
 
 Edit `config.yaml` to set your LLM provider:
