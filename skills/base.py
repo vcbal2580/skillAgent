@@ -51,8 +51,15 @@ class BaseSkill(ABC):
         pass
 
     def get_tool_definition(self) -> dict:
-        """Get the OpenAI function calling tool definition."""
-        return {
+        """Get the OpenAI function-calling tool definition.
+
+        The base definition is built from the class attributes, then
+        language-specific prompt overrides from prompts/<lang>.yaml are
+        merged in via prompt_loader so LLM-facing text reflects the active
+        language without touching skill logic.
+        """
+        from core.prompt_loader import overlay
+        base = {
             "type": "function",
             "function": {
                 "name": self.name,
@@ -60,3 +67,4 @@ class BaseSkill(ABC):
                 "parameters": self.parameters,
             },
         }
+        return overlay(self.name, base)

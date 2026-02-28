@@ -1,0 +1,66 @@
+# ============================================================
+# English skill prompts
+# These strings are sent directly to the LLM as tool definitions.
+# Edit freely - code logic is never touched here.
+# ============================================================
+
+web_search:
+  description: >-
+    Search the internet for up-to-date information.
+    Use this when you need real-time data, breaking news, or facts you are unsure about.
+  parameters:
+    query: "Search query keywords"
+    max_results: "Maximum number of results to return (default: 5)"
+
+knowledge_manage:
+  description: >-
+    Manage the personal knowledge base.
+    Supported actions: save new knowledge, search by semantic similarity,
+    list all entries, or delete an entry by ID.
+    Use this whenever the user wants to remember something or you need to
+    recall previously stored information.
+  parameters:
+    action: "Operation type: save | search | list | delete"
+    content: "save → text to store; search → query string; delete → entry ID"
+    tags: "Optional comma-separated tags, e.g. 'python,tips,reference'"
+
+get_datetime:
+  description: >-
+    Return the current date, time, weekday, and Unix timestamp.
+    Supports any UTC offset so it works for any timezone worldwide.
+  parameters:
+    timezone_offset: "UTC offset in hours (e.g. 8 for CST, -5 for EST). Default: 8."
+
+fortune_divination:
+  description: >-
+    Entertainment-only fortune reading based on Chinese Heavenly Stems,
+    Earthly Branches, Five Elements, and Eight Trigrams.
+    Provides a symbolic interpretation and brief suggestion.
+  parameters:
+    question: "The topic to divine (e.g. career, relationships, finances)"
+    year: "Optional birth year for additional context (e.g. 1996)"
+
+tarot_career_reading:
+  description: >-
+    Entertainment-only tarot career reading.
+    Draws 1 or 3 cards from the Major Arcana and provides
+    a career-focused symbolic interpretation for each.
+  parameters:
+    question: "Career-related question (e.g. should I change jobs, how to get promoted)"
+    cards: "Number of cards to draw: 1 or 3 (default: 3)"
+
+today_luck:
+  description: >-
+    Entertainment-only daily luck generator.
+    Returns a luck score, lucky colour, lucky number, lucky direction,
+    and one actionable suggestion for the day.
+  parameters:
+    name: "Optional name or nickname for a personalised reading"
+
+huangli_today:
+  description: >-
+    Entertainment-only simplified Chinese almanac (黄历).
+    Returns auspicious activities (宜), inauspicious activities (忌),
+    wealth direction, joy direction, and a daily note.
+  parameters:
+    date: "Optional date in YYYY-MM-DD format (defaults to today)"
