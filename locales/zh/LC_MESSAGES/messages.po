@@ -1,0 +1,257 @@
+# Chinese (Simplified) translations for SkillAgent
+# Language: zh
+# Charset: UTF-8
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh\n"
+
+# ---------------------------------------------------------------------------
+# main.py - CLI welcome banner
+# ---------------------------------------------------------------------------
+
+msgid "AI Assistant - Web Search | Knowledge Base | Extensible Skills"
+msgstr "智能助手 - 支持联网搜索 | 知识库管理 | 可扩展技能"
+
+msgid "Commands: [green]/help[/green] help | [green]/reset[/green] reset | [green]/skills[/green] skill list | [green]/quit[/green] exit"
+msgstr "命令: [green]/help[/green] 帮助 | [green]/reset[/green] 重置对话 | [green]/skills[/green] 技能列表 | [green]/quit[/green] 退出"
+
+msgid "Goodbye! 👋"
+msgstr "再见！👋"
+
+msgid "Conversation reset"
+msgstr "对话已重置"
+
+msgid "Registered Skills"
+msgstr "已注册技能"
+
+msgid "/help   - Show help\n/reset  - Reset conversation history\n/skills - Show registered skills\n/quit   - Exit\n\nType directly to chat with the assistant.\nThe assistant can call skills for web search, knowledge management, etc."
+msgstr "/help   - 显示帮助\n/reset  - 重置对话历史\n/skills - 显示已注册技能\n/quit   - 退出程序\n\n直接输入文字即可与助手对话。\n助手可以自动调用技能来联网搜索、管理知识库等。"
+
+msgid "Help"
+msgstr "帮助"
+
+msgid "Thinking..."
+msgstr "思考中..."
+
+msgid "Press /quit to exit"
+msgstr "按 /quit 退出"
+
+msgid "SkillAgent - AI Skill Assistant"
+msgstr "SkillAgent - 智能技能助手"
+
+msgid "Running mode: cli=interactive CLI (default), server=API server"
+msgstr "运行模式: cli=交互式命令行(默认), server=API服务器"
+
+msgid "Config file path (default: config.yaml)"
+msgstr "配置文件路径 (默认: config.yaml)"
+
+# ---------------------------------------------------------------------------
+# core/agent.py
+# ---------------------------------------------------------------------------
+
+msgid "Sorry, something went wrong. Please try again."
+msgstr "抱歉，处理过程中遇到问题，请重试。"
+
+# ---------------------------------------------------------------------------
+# skills/web_search.py
+# ---------------------------------------------------------------------------
+
+msgid "Search the internet for up-to-date information. Use this when you need real-time data, news, or facts you are unsure about."
+msgstr "搜索互联网获取最新信息。当你需要查找实时信息、新闻、或不确定的知识时使用。"
+
+msgid "Search query keywords"
+msgstr "搜索关键词"
+
+msgid "Maximum number of results, default 5"
+msgstr "最大返回结果数，默认5"
+
+msgid "No search results found."
+msgstr "未找到相关搜索结果。"
+
+# ---------------------------------------------------------------------------
+# skills/knowledge_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Manage the personal knowledge base. Save new knowledge, search existing entries, list all entries, or delete entries. Use when the user wants to remember something or you need to retrieve previously stored information."
+msgstr "管理个人知识库。可以保存新知识、搜索已有知识、列出所有知识、或删除知识条目。当用户想记住某些信息、或者你需要查找之前存储的信息时使用。"
+
+msgid "Operation: save=save knowledge, search=search knowledge, list=list all, delete=delete entry"
+msgstr "操作类型: save=保存知识, search=搜索知识, list=列出知识, delete=删除知识"
+
+msgid "For save: text to store; for search: query string; for delete: knowledge ID"
+msgstr "保存时：要保存的知识内容；搜索时：搜索查询；删除时：知识ID"
+
+msgid "Optional comma-separated tags, e.g. 'python,programming,tips'"
+msgstr "保存时可选的标签，用逗号分隔，如 'python,编程,技巧'"
+
+msgid "Error: 'content' is required to save knowledge"
+msgstr "错误: 保存知识需要提供content参数"
+
+msgid "Error: 'content' is required as the search query"
+msgstr "错误: 搜索知识需要提供content作为查询"
+
+msgid "No related knowledge found."
+msgstr "未找到相关知识。"
+
+msgid "Knowledge base is empty."
+msgstr "知识库为空。"
+
+msgid "Error: 'content' must be the knowledge ID to delete"
+msgstr "错误: 删除知识需要提供content参数作为知识ID"
+
+msgid "Unknown action: %s. Supported: save / search / list / delete"
+msgstr "未知操作: %s，支持: save/search/list/delete"
+
+# ---------------------------------------------------------------------------
+# skills/datetime_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Get the current date, time, weekday, and related info. Supports different UTC offsets."
+msgstr "获取当前日期、时间、星期等信息，支持不同时区。"
+
+msgid "UTC offset in hours, e.g. 8 for China (CST), -5 for US Eastern. Default: 8."
+msgstr "时区偏移(小时)，如中国为8，美国东部为-5。默认为8(北京时间)。"
+
+msgid "Monday"
+msgstr "星期一"
+
+msgid "Tuesday"
+msgstr "星期二"
+
+msgid "Wednesday"
+msgstr "星期三"
+
+msgid "Thursday"
+msgstr "星期四"
+
+msgid "Friday"
+msgstr "星期五"
+
+msgid "Saturday"
+msgstr "星期六"
+
+msgid "Sunday"
+msgstr "星期日"
+
+# ---------------------------------------------------------------------------
+# skills/divination_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Fortune divination (entertainment) - interprets a question using Heavenly Stems, Earthly Branches, Five Elements, and Eight Trigrams."
+msgstr "命理卜算技能（娱乐向） - 基于天干地支、五行、八卦做简要解读。"
+
+msgid "The question to divine, e.g. career, relationships, finances."
+msgstr "想占问的问题，如事业、感情、财运等。"
+
+msgid "Optional birth year for reference, e.g. 1996."
+msgstr "可选，年份（用于辅助参考），如 1996。"
+
+msgid "Error: question cannot be empty"
+msgstr "错误: question 不能为空"
+
+msgid "【Fortune Divination (entertainment only)】"
+msgstr "【命理卜算（娱乐参考）】"
+
+msgid "Expand proactively, focus on networking; plan before acting."
+msgstr "宜主动拓展、人脉经营，先布局后发力。"
+
+msgid "Boost visibility and communication; seize the window of opportunity."
+msgstr "宜提升曝光与表达，把握窗口期。"
+
+msgid "Steady progress with execution; review and iterate."
+msgstr "宜稳中求进，重视执行和复盘。"
+
+msgid "Focus on rules and efficiency; simplify."
+msgstr "宜聚焦规则与效率，适合做减法。"
+
+msgid "Learn and accumulate; ride the current, avoid head-on clashes."
+msgstr "宜学习沉淀，借势而行，避免硬碰硬。"
+
+msgid "Note: For cultural entertainment and self-reflection only, not professional advice."
+msgstr "提示: 结果仅供文化娱乐与自我反思，不作为专业决策依据。"
+
+# ---------------------------------------------------------------------------
+# skills/tarot_career_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Draw tarot cards and provide a career-focused reading (entertainment only)."
+msgstr "抽取塔罗牌并提供事业方向解读（娱乐参考）。"
+
+msgid "Career-related question, e.g. should I change jobs, how to get promoted, should I proceed with a project."
+msgstr "事业相关问题，例如：要不要换工作、如何升职、项目是否推进。"
+
+msgid "Number of cards to draw: 1 or 3, default 3."
+msgstr "抽牌数量，支持 1 或 3，默认 3。"
+
+msgid "Error: question cannot be empty"
+msgstr "错误: question 不能为空"
+
+msgid "【Tarot Career Reading (entertainment only)】"
+msgstr "【塔罗事业解读（娱乐参考）】"
+
+msgid "Upright"
+msgstr "正位"
+
+msgid "Reversed"
+msgstr "逆位"
+
+msgid "Past Foundation"
+msgstr "过去基础"
+
+msgid "Current State"
+msgstr "当前状态"
+
+msgid "Near-term Trend"
+msgstr "近期趋势"
+
+msgid "Suggestion: Prioritize one action that most increases career certainty, and validate results within a week."
+msgstr "建议: 优先做一件最能提升职业确定性的行动，并在一周内验证结果。"
+
+msgid "Note: For cultural entertainment and self-inspiration only, not professional advice."
+msgstr "提示: 结果仅供文化娱乐与自我启发，不作为专业决策依据。"
+
+# ---------------------------------------------------------------------------
+# skills/lucky_today_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Generate today's lucky index, lucky color, lucky number, and action suggestion (entertainment)."
+msgstr "生成今日好运指数、幸运色、幸运数字和行动建议（娱乐参考）。"
+
+msgid "Optional name or nickname for personalised results."
+msgstr "可选，姓名或昵称，用于个性化幸运结果。"
+
+msgid "【Today's Luck (entertainment only)】"
+msgstr "【今日好运（娱乐参考）】"
+
+msgid "Great Fortune"
+msgstr "大吉"
+
+msgid "Good Fortune"
+msgstr "中吉"
+
+msgid "Mild Fortune"
+msgstr "小吉"
+
+msgid "Note: For cultural entertainment and self-motivation only."
+msgstr "提示: 结果仅供文化娱乐与自我激励。"
+
+# ---------------------------------------------------------------------------
+# skills/almanac_skill.py
+# ---------------------------------------------------------------------------
+
+msgid "Provide a simplified daily almanac (auspicious/inauspicious activities, directions, daily note). Supports a specific date."
+msgstr "提供简化版黄历信息（宜/忌、吉位、日签），支持指定日期。"
+
+msgid "Optional date in YYYY-MM-DD format; defaults to today."
+msgstr "可选，日期，格式 YYYY-MM-DD；不传则默认今天。"
+
+msgid "Error: date format must be YYYY-MM-DD"
+msgstr "错误: date 格式应为 YYYY-MM-DD"
+
+msgid "【Today's Almanac (entertainment only)】"
+msgstr "【今日黄历（娱乐参考）】"
+
+msgid "Note: Simplified cultural almanac for entertainment; does not replace a professional calendar."
+msgstr "提示: 内容为简化文化娱乐版本，不替代专业历法。"

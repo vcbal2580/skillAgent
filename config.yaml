@@ -2,6 +2,9 @@
 # Skill Agent Configuration
 # ============================================================
 
+# UI language: 'zh' = Chinese, 'en' = English
+language: zh
+
 llm:
   # 支持 openai / deepseek / zhipu / qwen / ollama 等 OpenAI 兼容接口
   # ---- 智谱 ----
