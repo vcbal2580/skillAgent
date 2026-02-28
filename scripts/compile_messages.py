@@ -62,8 +62,9 @@ def parse_po(po_path: Path) -> dict[str, str]:
                 flush()
 
     flush()
-    # Drop the header entry (empty msgid)
-    catalog.pop("", None)
+    # Keep the header entry (empty msgid) so gettext knows the charset is UTF-8.
+    # Removing it causes UnicodeDecodeError when the .mo is loaded on systems
+    # whose default encoding is not UTF-8 (e.g. Windows with ASCII locale).
     return catalog
 
 
