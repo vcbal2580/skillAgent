@@ -30,6 +30,7 @@
 |------|------|
 | **LLM 抽象** | OpenAI 兼容接口，支持 GPT / DeepSeek / Ollama 等 |
 | **技能系统** | 装饰器模式注册，自动映射 Function Calling |
+| **命理娱乐技能** | 内置天干地支八卦卜算、塔罗事业解读、今日好运、黄历技能 |
 | **知识库** | ChromaDB 向量存储，语义检索个人知识 |
 | **联网搜索** | DuckDuckGo 免费搜索，无需 API Key |
 | **持久化** | SQLite 保存对话历史 |
@@ -38,11 +39,41 @@
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 克隆 & 创建虚拟环境
 
 ```bash
-cd f:\aiagent
+git clone <repo-url>
+cd skillAgent
+
+# 创建虚拟环境（推荐，避免污染全局 Python）
+python -m venv .venv
+
+# 激活（Windows PowerShell）
+.venv\Scripts\Activate.ps1
+# 激活（Linux / macOS）
+# source .venv/bin/activate
+```
+
+### 2. 安装依赖 & 注册 `hi` 命令
+
+```bash
+# 安装第三方依赖
 pip install -r requirements.txt
+
+# 以可编辑模式安装本项目 ← 这一步会在 .venv/Scripts/ 生成 hi.exe
+pip install -e .
+```
+
+> **原理**：`pyproject.toml` 的 `[project.scripts]` 中定义了 `hi = "cli:main"`，
+> `pip install -e .` 读取此配置，在当前虚拟环境的 `Scripts/` 目录生成 `hi.exe`（Windows）
+> 或 `hi`（Linux/macOS）。因为是 editable 模式，`hi` 始终指向仓库里的 `cli.py`，
+> 修改代码无需重新安装。
+
+安装完成后可全局（在虚拟环境激活状态下）使用：
+
+```bash
+hi vcbal          # 启动 CLI 交互模式
+hi vcbal server   # 启动 API 服务器模式
 ```
 
 ### 2. 配置
@@ -169,7 +200,11 @@ aiagent/
 │   ├── registry.py          # 技能注册中心
 │   ├── web_search.py        # 联网搜索技能
 │   ├── knowledge_skill.py   # 知识管理技能
-│   └── datetime_skill.py    # 日期时间技能
+│   ├── datetime_skill.py    # 日期时间技能
+│   ├── divination_skill.py  # 天干地支/八卦卜算
+│   ├── tarot_career_skill.py# 塔罗事业解读
+│   ├── lucky_today_skill.py # 今日好运
+│   └── almanac_skill.py     # 黄历宜忌
 ├── storage/
 │   └── database.py          # SQLite 对话存储
 ├── api/
@@ -178,6 +213,47 @@ aiagent/
     ├── chromadb/             # 向量数据库
     └── agent.db              # SQLite 数据库
 ```
+
+## 国际化 / Internationalization (i18n)
+
+本项目使用 GNU gettext 标准方案实现多语言支持，**零额外依赖**（Python 内置 `gettext` 模块）。
+
+### 切换语言
+
+编辑 `config.yaml`：
+```yaml
+language: zh   # 中文（默认）
+language: en   # English（回退到 msgid 英文原文）
+```
+
+### 目录结构
+
+```
+locales/
+└── zh/
+    └── LC_MESSAGES/
+        ├── messages.po   # 可编辑翻译源文件
+        └── messages.mo   # 编译后的二进制（已预编译提交）
+```
+
+### 添加新语言
+
+1. 复制并新建语言目录，例如 `locales/ja/LC_MESSAGES/messages.po`
+2. 翻译 `msgstr` 字段
+3. 编译：
+   ```bash
+   python scripts/compile_messages.py
+   ```
+4. 在 `config.yaml` 中设置 `language: ja`
+
+### 在代码中标记可翻译字符串
+
+```python
+from core.i18n import _
+print(_("No search results found."))   # 自动对应当前语言
+```
+
+---
 
 ## 技术栈
 
