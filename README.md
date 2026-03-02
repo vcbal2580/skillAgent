@@ -73,7 +73,9 @@ cd skillAgent
 python -m venv .venv
 
 # 激活（Windows PowerShell）
-.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
+# 如果提示"无法加载脚本"权限错误，先执行：
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # 激活（Linux / macOS）
 # source .venv/bin/activate
 
