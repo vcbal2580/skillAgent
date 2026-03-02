@@ -172,9 +172,6 @@ class WeatherSkill(BaseSkill):
                 date_str = daily["time"][i]
                 try:
                     dt = datetime.strptime(date_str, "%Y-%m-%d")
-                    label = ["今天", "明天", "后天"].get(i, date_str) if i < 3 \
-                            else dt.strftime("%m/%d")
-                    # Quick labelfix using list indexing
                     if i == 0:
                         label = "今天"
                     elif i == 1:
