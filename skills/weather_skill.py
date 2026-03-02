@@ -1,9 +1,10 @@
 """
 Weather skill - fetches real-time weather and short-range forecast.
 
-Data sources (both free, no API key required):
-  - Geocoding : nominatim.openstreetmap.org
-  - Weather   : api.open-meteo.com  (WMO-standard codes, metric units)
+Data sources (all free, no API key required):
+  - IP geolocation : ip-api.com/json       (fallback when no city given)
+  - City geocoding : nominatim.openstreetmap.org
+  - Weather        : api.open-meteo.com    (WMO-standard codes, metric units)
 """
 
 import json
@@ -50,7 +51,10 @@ class WeatherSkill(BaseSkill):
         "properties": {
             "city": {
                 "type": "string",
-                "description": "City name, e.g. 'Shenzhen', '深圳', 'Beijing', '北京'",
+                "description": (
+                    "City name, e.g. 'Shenzhen', '深圳', 'Beijing', '北京'. "
+                    "Omit (or pass null) to auto-detect from the user's current IP address."
+                ),
             },
             "days": {
                 "type": "integer",
@@ -58,12 +62,27 @@ class WeatherSkill(BaseSkill):
                 "default": 3,
             },
         },
-        "required": ["city"],
+        "required": [],
     }
 
     # ------------------------------------------------------------------ #
     #  Internal helpers                                                    #
     # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _geolocate_by_ip() -> tuple[float, float, str]:
+        """
+        Return (lat, lon, display_name) inferred from the outbound IP address.
+        Uses ip-api.com (free, no key, max 45 req/min).
+        """
+        data = _get_json("http://ip-api.com/json/?fields=status,message,lat,lon,city,regionName,country")
+        if data.get("status") != "success":
+            raise ValueError(f"IP geolocation failed: {data.get('message', 'unknown error')}")
+        city    = data.get("city", "")
+        region  = data.get("regionName", "")
+        country = data.get("country", "")
+        display = ", ".join(p for p in [city, region, country] if p)
+        return float(data["lat"]), float(data["lon"]), display or "Unknown"
 
     @staticmethod
     def _geocode(city: str) -> tuple[float, float, str]:
@@ -114,10 +133,15 @@ class WeatherSkill(BaseSkill):
     #  Execute                                                             #
     # ------------------------------------------------------------------ #
 
-    def execute(self, city: str, days: int = 3) -> str:  # type: ignore[override]
+    def execute(self, city: str | None = None, days: int = 3) -> str:  # type: ignore[override]
         try:
-            # 1. Geocode
-            lat, lon, display_name = self._geocode(city)
+            # 1. Resolve location: city name → nominatim, or IP → ip-api.com
+            if city:
+                lat, lon, display_name = self._geocode(city)
+                location_note = ""
+            else:
+                lat, lon, display_name = self._geolocate_by_ip()
+                location_note = "  (根据 IP 推断)"
 
             # 2. Fetch weather
             w = self._fetch_weather(lat, lon, days)
@@ -128,7 +152,7 @@ class WeatherSkill(BaseSkill):
             timezone = w.get("timezone", "")
 
             lines = [
-                f"📍 {display_name.split(',')[0]}  ({lat:.2f}°N, {lon:.2f}°E)",
+                f"📍 {display_name.split(',')[0]}  ({lat:.2f}°N, {lon:.2f}°E){location_note}",
                 f"🕐 观测时间：{cur_time}  ({timezone})",
                 "",
                 "━━━ 当前天气 ━━━",

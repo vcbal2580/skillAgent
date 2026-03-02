@@ -72,6 +72,8 @@ get_weather:
     for any city worldwide. Use this for ALL weather-related questions
     (current temperature, conditions, rain chance, forecasts, etc.).
     Never use web_search for weather queries.
+    If the user does not mention a city, do NOT ask - just call the skill
+    without a city and it will auto-detect from the current IP address.
   parameters:
-    city: "City name in any language, e.g. 'Shenzhen', '深圳', 'Tokyo', 'London'"
+    city: "Optional city name in any language, e.g. 'Shenzhen', '深圳', 'Tokyo'. Omit to auto-detect from IP."
     days: "Number of forecast days to include (1-7). Default: 3."
