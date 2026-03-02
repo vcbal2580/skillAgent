@@ -1,0 +1,94 @@
+MIT License with Commons Clause
+
+Copyright (c) 2026 vcbal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — MIT License
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction for NON-COMMERCIAL purposes, including
+without limitation the rights to use, copy, modify, merge, publish, distribute,
+and sublicense copies of the Software, subject to the following conditions:
+
+1. The above copyright notice, this permission notice, and the attribution
+   notice in PART 3 shall be included in all copies or substantial portions
+   of the Software. They MUST NOT be removed, obscured, or altered.
+
+2. Commercial use of the Software, in whole or in part, requires a separate
+   written authorization from the copyright holder (vcbal). See PART 2.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — Commons Clause (Commercial Use Restriction)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Commercial Use" means any use of the Software, or any Derivative Work based
+on the Software, that is intended for or directed toward commercial advantage
+or monetary compensation. This includes, but is not limited to:
+
+  (a) Offering the Software or any Derivative Work as a product or service
+      (SaaS, API, hosted service, subscription, etc.) to third parties;
+  (b) Integrating the Software into a commercial product for sale or licensing;
+  (c) Using the Software internally within a company, organization, or any
+      for-profit entity to support or automate business operations;
+  (d) Any other use within a commercial or for-profit context.
+
+Without a separate written commercial license granted by vcbal, Commercial Use
+of the Software is expressly prohibited.
+
+To obtain a commercial license, contact: vcbal2580@gmail.com
+(or via the repository's Issues/Discussions page on GitHub)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — Attribution Requirement
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Any use, distribution, or Derivative Work of this Software must:
+
+  1. Retain this LICENSE file in its entirety, unmodified.
+  2. Display the following notice in a prominent location (e.g., README,
+     About page, documentation, or application UI):
+
+       "Based on skillAgent by vcbal
+        https://github.com/vcbal2580/skillAgent"
+
+  3. Not use the name "vcbal" or "skillAgent" to endorse or promote
+     Derivative Works without prior written permission.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+中文说明（Chinese Summary）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+版权所有 © 2026 vcbal
+
+本软件采用 MIT + Commons Clause 协议，核心规则如下：
+
+【允许】
+  · 个人学习、研究、非商业用途的使用、修改与分发
+  · 开源项目引用（需保留版权声明与来源链接）
+
+【禁止（未经授权）】
+  · 任何商业用途，包括但不限于：
+    - 将本软件作为产品/服务对外提供（SaaS、API 服务等）
+    - 集成进商业产品进行销售或授权
+    - 在公司或营利性组织内部使用本软件支撑业务运营
+  · 删除、隐藏或修改版权声明、来源信息
+
+【引用要求】
+  所有使用、分发或基于本软件的衍生作品，必须：
+  1. 完整保留本 LICENSE 文件，不得修改
+  2. 在醒目位置（README、关于页面等）标注：
+       "基于 vcbal 的 skillAgent 项目
+        https://github.com/vcbal2580/skillAgent"
+
+【商业授权咨询】
+  请通过 GitHub Issues 或 vcbal2580@gmail.com 联系获取商业授权。

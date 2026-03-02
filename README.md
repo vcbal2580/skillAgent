@@ -2,6 +2,8 @@
 
 **中文** | [English](README.en.md)
 
+[![License: MIT + Commons Clause](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-blue.svg)](LICENSE)
+
 一个轻量级、可扩展的 AI 技能助手 MVP，基于 OpenAI Function Calling 驱动，支持联网搜索、个人知识库、自定义技能扩展。
 
 ## 架构

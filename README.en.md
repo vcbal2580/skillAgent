@@ -2,6 +2,8 @@
 
 [中文](README.md) | **English**
 
+[![License: MIT + Commons Clause](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-blue.svg)](LICENSE)
+
 A lightweight, extensible AI skill assistant MVP powered by OpenAI Function Calling.
 Supports web search, a personal knowledge base, and custom skill plugins.
 
