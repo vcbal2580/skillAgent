@@ -8,6 +8,7 @@ web_search:
   description: >-
     Search the internet for up-to-date information.
     Use this when you need real-time data, breaking news, or facts you are unsure about.
+    Note: for weather queries always use get_weather instead.
   parameters:
     query: "Search query keywords"
     max_results: "Maximum number of results to return (default: 5)"
@@ -64,3 +65,13 @@ huangli_today:
     wealth direction, joy direction, and a daily note.
   parameters:
     date: "Optional date in YYYY-MM-DD format (defaults to today)"
+
+get_weather:
+  description: >-
+    Get real-time weather conditions and a multi-day forecast (up to 7 days)
+    for any city worldwide. Use this for ALL weather-related questions
+    (current temperature, conditions, rain chance, forecasts, etc.).
+    Never use web_search for weather queries.
+  parameters:
+    city: "City name in any language, e.g. 'Shenzhen', '深圳', 'Tokyo', 'London'"
+    days: "Number of forecast days to include (1-7). Default: 3."

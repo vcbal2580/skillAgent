@@ -8,6 +8,7 @@ web_search:
   description: >-
     联网搜索互联网，获取最新资讯与实时信息。
     当你需要查找新闻、当日数据、或无法确认的事实时调用此工具。
+    注意：天气查询请优先使用 get_weather，不要用此工具查天气。
   parameters:
     query: "搜索关键词，尽量简洁精准"
     max_results: "最多返回多少条结果（默认 5 条）"
@@ -58,3 +59,12 @@ huangli_today:
     支持指定日期，结果每日固定，仅供文化娱乐参考。
   parameters:
     date: "可选，日期格式 YYYY-MM-DD，不填则默认今天"
+
+get_weather:
+  description: >-
+    查询任意城市的实时天气与多日天气预报（最多 7 天）。
+    所有天气类问题（当前气温、天气状况、未来几天预报、会不会下雨等）
+    都必须使用此工具，不要用 web_search 代替。
+  parameters:
+    city: "城市名称，支持中英文，例如：深圳、北京、Shanghai、Tokyo"
+    days: "预报天数（1-7），默认 3 天"

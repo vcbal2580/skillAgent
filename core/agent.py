@@ -23,6 +23,7 @@ class Agent:
         from skills.web_search import WebSearchSkill
         from skills.knowledge_skill import KnowledgeSkill
         from skills.datetime_skill import DateTimeSkill
+        from skills.weather_skill import WeatherSkill
         from skills.divination_skill import DivinationSkill
         from skills.tarot_career_skill import TarotCareerSkill
         from skills.lucky_today_skill import LuckyTodaySkill
@@ -31,6 +32,7 @@ class Agent:
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
         self.registry.register(DateTimeSkill())
+        self.registry.register(WeatherSkill())
         self.registry.register(DivinationSkill())
         self.registry.register(TarotCareerSkill())
         self.registry.register(LuckyTodaySkill())
