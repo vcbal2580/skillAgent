@@ -21,6 +21,8 @@ def run_cli():
     from rich.panel import Panel
     from core.agent import Agent
     from core.i18n import _
+    from core.tts import create_engine
+    import threading
 
     console = Console()
 
@@ -35,6 +37,16 @@ def run_cli():
 
     agent = Agent()
     agent.register_default_skills()
+
+    # Initialise TTS engine from config (may be DisabledEngine if tts.enabled=false)
+    tts_engine = create_engine(config.get("tts", {}) or {})
+    _tts_muted = [False]  # use list so inner functions can mutate
+
+    def _speak_async(text: str):
+        """Speak *text* in a daemon thread, returns the thread."""
+        t = threading.Thread(target=tts_engine.speak, args=(text,), daemon=True)
+        t.start()
+        return t
 
     _ctrl_c_count = 0  # track consecutive Ctrl+C presses
 
@@ -70,12 +82,19 @@ def run_cli():
                         _("/help   - Show help\n"
                           "/reset  - Reset conversation history\n"
                           "/skills - Show registered skills\n"
+                          "/tts    - Toggle TTS voice on/off\n"
                           "/quit   - Exit (or press Ctrl+C twice)\n\n"
                           "Type directly to chat with the assistant.\n"
                           "The assistant can call skills for web search, knowledge management, etc."),
                         title=_("Help"),
                         border_style="green",
                     ))
+                    continue
+                elif cmd == "/tts":
+                    _tts_muted[0] = not _tts_muted[0]
+                    state = _("muted") if _tts_muted[0] else _("active")
+                    engine_name = type(tts_engine).__name__
+                    console.print(f"[yellow]TTS {state} ({engine_name})[/yellow]")
                     continue
                 else:
                     console.print(f"[red]{cmd}[/red] - unknown command, type /help")
@@ -85,8 +104,19 @@ def run_cli():
             with console.status(f"[bold cyan]{_('Thinking...')}[/bold cyan]", spinner="dots"):
                 reply = agent.chat(user_input)
 
+            # Display text first, then speak concurrently.
+            # Waiting for the thread ensures the next prompt appears only after
+            # TTS finishes (Ctrl+C during playback skips to next prompt).
             console.print()
             console.print(Markdown(reply), style="white")
+
+            if not _tts_muted[0]:
+                _speech_thread = _speak_async(reply)
+                try:
+                    _speech_thread.join()  # wait; Ctrl+C interrupt skips remaining audio
+                except KeyboardInterrupt:
+                    _ctrl_c_count = 0
+                    console.print(f"[dim]{_('[voice skipped]')}[/dim]")
 
         except KeyboardInterrupt:
             _ctrl_c_count += 1
