@@ -78,3 +78,44 @@ agent:
 api:
   host: "0.0.0.0"
   port: 8000
+
+# ============================================================
+# Multimodal - Vision (Image Understanding)
+# ============================================================
+# Set llm.vision_model to a vision-capable model.
+# If omitted, falls back to llm.model.
+#
+# Examples:
+#   OpenAI:     gpt-4o
+#   Qwen:       qwen-vl-plus  /  qwen-vl-max
+#   Zhipu:      glm-4v
+#
+# llm:
+#   vision_model: "qwen-vl-plus"
+
+# ============================================================
+# Multimodal - Speech To Text (STT / ASR)
+# ============================================================
+stt:
+  # Engine choices: disabled | openai | dashscope
+  engine: "disabled"
+
+  # ---- OpenAI Whisper ----
+  # engine: "openai"
+  # openai_model: "whisper-1"        # default
+  # api_key: "sk-..."                # leave blank to reuse llm.api_key
+  # base_url: ""                     # leave blank to reuse llm.base_url
+  # language: "zh"                   # optional BCP-47 hint
+
+  # ---- Alibaba DashScope (Paraformer) ----
+  # engine: "dashscope"
+  # api_key: "your-dashscope-api-key"  # leave blank to reuse llm.api_key
+  # language: "zh"
+
+# ============================================================
+# Document parsing (optional dependencies)
+# ============================================================
+# PDF:   pip install pypdf
+# Word:  pip install python-docx
+# Excel: pip install openpyxl
+# Mic recording (for /voice in CLI): pip install sounddevice scipy
