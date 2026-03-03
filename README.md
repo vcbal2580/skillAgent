@@ -66,18 +66,31 @@ bash scripts/setup.sh
 
 ### 方式二：手动步骤
 
-```bash
+**Windows PowerShell：**
+```powershell
 git clone <repo-url>
 cd skillAgent
 
 python -m venv .venv
 
-# 激活（Windows PowerShell）
+# 激活虚拟环境
 .\.venv\Scripts\Activate.ps1
 # 如果提示"无法加载脚本"权限错误，先执行：
 # Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-# 激活（Linux / macOS）
-# source .venv/bin/activate
+
+pip install -r requirements.txt
+pip install -e .   # 生成 hi 命令
+```
+
+**macOS / Linux：**
+```bash
+git clone <repo-url>
+cd skillAgent
+
+python3 -m venv .venv
+
+# 激活虚拟环境
+source .venv/bin/activate
 
 pip install -r requirements.txt
 pip install -e .   # 生成 hi 命令
