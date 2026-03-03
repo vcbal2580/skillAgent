@@ -5,3 +5,22 @@ fastapi>=0.109.0
 uvicorn>=0.27.0
 pyyaml>=6.0.1
 rich>=13.7.0
+
+# ── TTS (optional, uncomment whichever engine you choose) ─────────────────
+# Cloud TTS — Microsoft Edge neural voices (free, no API key)
+# edge-tts>=7.0
+#
+# Offline TTS — system native speech engine
+# pyttsx3>=2.90
+#
+# DashScope CosyVoice TTS (reuses your existing DashScope API key)
+# dashscope>=1.20
+#
+# Fish Audio TTS (community anime/game/voice-actor voice library)
+# fish-audio-sdk>=0.2
+#
+# Audio playback for file-based engines (edge-tts / dashscope / fish)
+# Choose ONE of:
+#   pygame>=2.5          — best cross-platform mp3/wav player
+#   playsound==1.2.2     — lightweight, Windows-tested
+# (If neither is installed a subprocess fallback runs automatically)
