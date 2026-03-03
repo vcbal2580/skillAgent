@@ -24,7 +24,13 @@ class DashScopeSTTEngine:
     name = "dashscope"
 
     def __init__(self):
-        import dashscope
+        try:
+            import dashscope
+        except ImportError:
+            raise ImportError(
+                "dashscope is required for DashScope STT. "
+                "Run: pip install dashscope"
+            )
         api_key = config.get("stt.api_key") or config.get("llm.api_key", "")
         dashscope.api_key = api_key
         self.language = config.get("stt.language", "zh")
@@ -137,7 +143,13 @@ class DashScopeSTTEngine:
 
         Requires: pip install sounddevice
         """
-        import sounddevice as sd
+        try:
+            import sounddevice as sd
+        except ImportError:
+            raise ImportError(
+                "sounddevice is required for mic recording. "
+                "Run: pip install sounddevice"
+            )
         from dashscope.audio.asr import Recognition, RecognitionCallback
 
         texts: list[str] = []
