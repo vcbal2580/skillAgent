@@ -4,7 +4,7 @@
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-blue.svg)](LICENSE)
 
-一个轻量级、可扩展的 AI 技能助手 MVP，基于 OpenAI Function Calling 驱动，支持联网搜索、个人知识库、自定义技能扩展。
+一个轻量级、可扩展的 AI 技能助手 MVP，基于 OpenAI Function Calling 驱动，支持联网搜索、个人知识库、自定义技能扩展，以及**图像理解、语音输入、文档解析**等多模态能力。
 
 ## 架构
 
@@ -14,17 +14,18 @@
 ├─────────────────────────────────────────────────────┤
 │                   core/agent.py                      │
 │              Agent Orchestrator                      │
-│         (LLM ⇄ Tool Calling 循环)                    │
+│    (LLM ⇄ Tool Calling 循环 / 多模态调度)            │
 ├──────────┬──────────────┬───────────────────────────┤
 │ core/    │   skills/    │   knowledge/              │
 │ llm.py   │  registry.py │   vector_store.py         │
 │ context  │  base.py     │   knowledge_manager.py    │
 │ config   │  web_search  │                           │
-│          │  knowledge   │   storage/                │
-│          │  datetime    │   database.py (SQLite)    │
+│ stt/     │  knowledge   │   storage/                │
+│ tts/     │  datetime    │   database.py (SQLite)    │
+│          │  document ★  │                           │
 ├──────────┴──────────────┴───────────────────────────┤
 │                   api/server.py                      │
-│               FastAPI REST (for GUI)                 │
+│     FastAPI REST（文本 / 图像 / 音频 / 文档）         │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -40,6 +41,9 @@
 | **持久化** | SQLite 保存对话历史 |
 | **API 服务** | FastAPI REST 接口，为 GUI 预留 |
 | **CLI** | Rich 美化的交互式命令行 |
+| **图像理解 ★** | 上传本地图片或 URL，视觉模型分析内容 |
+| **语音输入 ★** | 麦克风录音或上传音频文件，STT 转文字后对话 |
+| **文档解析 ★** | 读取 PDF / Word / Excel，可存入知识库 |
 
 ## 快速开始
 
@@ -153,6 +157,57 @@ python main.py server
 | `/reset` | 重置对话历史 |
 | `/skills` | 显示已注册技能 |
 | `/quit` | 退出 |
+| `/image <路径或URL>` | 发送图片，视觉模型理解并回复 |
+| `/voice [秒数]` | 麦克风录音（默认 5 秒），STT 转文字后对话 |
+| `/doc <路径或URL>` | 读取文档（PDF/docx/xlsx），可选存入知识库 |
+
+### `/image` 使用示例
+
+```
+You > /image C:\Users\你\Pictures\screenshot.png
+Prompt (press Enter for default) > 这张截图里有什么错误信息？
+```
+
+也支持公开 URL：
+```
+You > /image https://example.com/chart.png
+```
+
+> 需要在 `config.yaml` 中设置视觉模型：
+> ```yaml
+> llm:
+>   vision_model: "qwen-vl-plus"   # 或 gpt-4o、glm-4v 等
+> ```
+
+### `/voice` 使用示例
+
+```
+You > /voice 8
+[STT] Recording 8s - speak now...
+（Agent 根据语音内容回复）
+```
+
+> 需要安装：`pip install sounddevice`，并在 `config.yaml` 配置 STT 引擎（见「多模态配置」）。
+
+### `/doc` 使用示例
+
+```
+You > /doc F:\reports\Q4财务报告.pdf
+Question (press Enter to summarize) > 核心结论是什么？
+Save to knowledge base? (y/N) > y
+已存入知识库，ID: xxxx-xxxx
+（Agent 回答…）
+```
+
+- 支持格式：`.pdf`、`.docx`、`.xlsx`、`.txt`
+- 输入 `y` 存入知识库后，后续对话可直接语义检索该文档内容
+
+> 需要安装对应依赖：
+> ```bash
+> pip install pypdf          # PDF
+> pip install python-docx   # Word
+> pip install openpyxl      # Excel
+> ```
 
 ## API 接口
 
@@ -162,11 +217,81 @@ python main.py server
 |------|------|------|
 | POST | `/chat` | 发送消息 `{"message": "..."}` |
 | POST | `/chat/reset` | 重置对话 |
+| POST | `/chat/image` | 图像对话 `{"message": "...", "image_url": "<URL或base64>"}` |
+| POST | `/chat/audio` | 上传音频文件（multipart），STT 后对话，返回转写文本和回复 |
+| POST | `/upload/document` | 上传文档（multipart），可附带 `question` 和 `save_to_knowledge` 参数 |
 | GET | `/skills` | 获取技能列表 |
 | GET | `/knowledge` | 获取所有知识 |
 | POST | `/knowledge` | 保存知识 `{"content": "...", "tags": [...]}` |
 | DELETE | `/knowledge/{id}` | 删除知识 |
 | GET | `/health` | 健康检查 |
+
+### `/chat/image` 示例
+
+```bash
+curl -X POST http://localhost:8000/chat/image \
+  -H "Content-Type: application/json" \
+  -d '{"message": "这张图里有什么？", "image_url": "https://example.com/pic.jpg"}'
+```
+
+### `/chat/audio` 示例
+
+```bash
+curl -X POST http://localhost:8000/chat/audio \
+  -F "file=@recording.mp3" \
+  -F "language=zh"
+# 返回: {"reply": "...", "transcribed": "识别出的文字"}
+```
+
+### `/upload/document` 示例
+
+```bash
+curl -X POST http://localhost:8000/upload/document \
+  -F "file=@report.pdf" \
+  -F "question=核心结论是什么？" \
+  -F "save_to_knowledge=true"
+# 返回: {"text": "...", "reply": "...", "knowledge_id": "xxx"}
+```
+
+## 多模态配置
+
+在 `config.yaml` 中添加以下配置：
+
+```yaml
+llm:
+  # 视觉模型（图片理解），不设置默认复用 llm.model
+  vision_model: "qwen-vl-plus"   # 或 gpt-4o、glm-4v 等
+
+stt:
+  # 语音识别引擎: disabled | openai | dashscope
+  engine: "openai"
+
+  # OpenAI Whisper：
+  openai_model: "whisper-1"      # 默认
+  # api_key / base_url 留空则复用 llm.api_key / llm.base_url
+  language: "zh"                 # 可选 BCP-47 语言提示
+
+  # 阿里云 DashScope Paraformer：
+  # engine: "dashscope"
+  # api_key: "your-dashscope-api-key"
+  # language: "zh"
+```
+
+### 多模态可选依赖
+
+```bash
+# 文档解析
+pip install pypdf          # PDF
+pip install python-docx   # Word .docx
+pip install openpyxl      # Excel .xlsx
+
+# 语音（麦克风录音 + 本地音频文件解码）
+pip install sounddevice   # 麦克风录音
+pip install soundfile     # 本地音频文件解码（dashscope 本地文件转写需要）
+
+# DashScope STT
+pip install dashscope
+```
 
 ## 扩展技能
 
@@ -217,10 +342,16 @@ aiagent/
 ├── config.yaml              # 配置文件
 ├── requirements.txt         # Python 依赖
 ├── core/
-│   ├── agent.py             # Agent 编排器
-│   ├── llm.py               # LLM 客户端抽象
+│   ├── agent.py             # Agent 编排器（含多模态调度）
+│   ├── llm.py               # LLM 客户端（文本 + 视觉）
 │   ├── config.py            # 配置管理
-│   └── context.py           # 对话上下文管理
+│   ├── context.py           # 对话上下文管理
+│   ├── stt/                 # 语音识别引擎层 ★
+│   │   ├── __init__.py      # 工厂函数 get_stt_engine()
+│   │   ├── engine_disabled.py
+│   │   ├── engine_openai.py # OpenAI Whisper
+│   │   └── engine_dashscope.py # 阿里云 Paraformer
+│   └── tts/                 # 语音合成引擎层
 ├── knowledge/
 │   ├── vector_store.py      # ChromaDB 向量存储
 │   └── knowledge_manager.py # 知识 CRUD
@@ -230,6 +361,7 @@ aiagent/
 │   ├── web_search.py        # 联网搜索技能
 │   ├── knowledge_skill.py   # 知识管理技能
 │   ├── datetime_skill.py    # 日期时间技能
+│   ├── document_skill.py    # 文档解析技能 ★
 │   ├── divination_skill.py  # 天干地支/八卦卜算
 │   ├── tarot_career_skill.py# 塔罗事业解读
 │   ├── lucky_today_skill.py # 今日好运
@@ -237,7 +369,7 @@ aiagent/
 ├── storage/
 │   └── database.py          # SQLite 对话存储
 ├── api/
-│   └── server.py            # FastAPI REST API
+│   └── server.py            # FastAPI REST API（含多模态接口）★
 └── data/                    # 运行时数据 (自动创建)
     ├── chromadb/             # 向量数据库
     └── agent.db              # SQLite 数据库
@@ -293,3 +425,6 @@ print(_("No search results found."))   # 自动对应当前语言
 - **FastAPI + Uvicorn** - REST API 服务
 - **SQLite** - 对话历史持久化
 - **Rich** - 终端美化
+- **pypdf / python-docx / openpyxl** - 文档解析（可选）
+- **sounddevice / soundfile** - 麦克风录音 / 音频解码（可选）
+- **dashscope** - 阿里云 STT（可选）
