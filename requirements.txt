@@ -12,6 +12,6 @@ python-docx>=1.1.0     # Word .docx extraction
 openpyxl>=3.1.0        # Excel .xlsx extraction
 
 # ── Multimodal: Voice input (optional, for /voice CLI and /chat/audio API) ──
-# sounddevice>=0.4.6   # microphone recording  (uncomment if needed)
-# soundfile>=0.12.1    # local audio file decode for dashscope STT (uncomment if needed)
+# sounddevice>=0.4.6   # microphone recording (required for /voice, uncomment if needed)
+# soundfile>=0.12.1    # wav write + local audio decode for dashscope STT (uncomment if needed)
 # dashscope>=1.14.0    # Alibaba DashScope STT  (uncomment if needed)

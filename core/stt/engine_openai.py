@@ -40,11 +40,20 @@ class OpenAISTTEngine:
     def transcribe_mic(self, duration: int = 5, language: str = None) -> str:
         """Record from microphone for `duration` seconds and transcribe.
 
-        Requires: pip install sounddevice scipy
+        Requires: pip install sounddevice soundfile
         """
-        import tempfile, os
-        import sounddevice as sd
-        import scipy.io.wavfile as wavfile
+        import tempfile
+        import os
+
+        try:
+            import sounddevice as sd
+        except ImportError:
+            raise ImportError("sounddevice is required for mic recording. Run: pip install sounddevice")
+
+        try:
+            import soundfile as sf
+        except ImportError:
+            raise ImportError("soundfile is required for mic recording. Run: pip install soundfile")
 
         sample_rate = 16000
         print(f"[STT] Recording {duration}s... ", end="", flush=True)
@@ -55,7 +64,7 @@ class OpenAISTTEngine:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
         try:
-            wavfile.write(tmp_path, sample_rate, audio)
+            sf.write(tmp_path, audio, sample_rate, subtype="PCM_16")
             return self.transcribe_file(tmp_path, language=language)
         finally:
             os.unlink(tmp_path)
