@@ -37,6 +37,8 @@
 | **命理娱乐技能** | 内置天干地支八卦卜算、塔罗事业解读、今日好运、黄历技能 |
 | **知识库** | ChromaDB 向量存储，语义检索个人知识 |
 | **联网搜索** | DuckDuckGo 免费搜索，无需 API Key |
+| **天气查询** | 实时天气 + 多日预报，无需 API Key，支持 IP 自动定位 |
+| **语音输出 (TTS)** | 4 引擎可选：edge-tts / pyttsx3 离线 / DashScope CosyVoice / Fish Audio 声优库 |
 | **持久化** | SQLite 保存对话历史 |
 | **API 服务** | FastAPI REST 接口，为 GUI 预留 |
 | **CLI** | Rich 美化的交互式命令行 |
@@ -152,7 +154,48 @@ python main.py server
 | `/help` | 显示帮助 |
 | `/reset` | 重置对话历史 |
 | `/skills` | 显示已注册技能 |
+| `/tts` | 切换语音朗读开/关（运行时随时使用）|
 | `/quit` | 退出 |
+
+> **Ctrl+C 一次** = 跳过当前语音朗读；**Ctrl+C 两次** = 退出程序。
+
+## 语音输出（TTS）
+
+在 `config.yaml` 中配置，`config.example.yaml` 包含完整说明。
+
+| 引擎 | 密钥 | 联网 | 中文质量 | 说明 |
+|------|------|------|----------|------|
+| `edge` | 无需 | 需要 | ⭐⭐⭐⭐⭐ | 微软神经网络 TTS，推荐首选 |
+| `pyttsx3` | 无需 | 离线 | ⭐⭐⭐ | 系统本地引擎，完全离线 |
+| `dashscope` | DashScope | 需要 | ⭐⭐⭐⭐⭐ | CosyVoice，复用已有 Key |
+| `fish` | Fish Audio | 需要 | ⭐⭐⭐⭐⭐ | 社区声优库，支持动漫角色音色 |
+
+**快速启用（edge-tts）：**
+```bash
+pip install edge-tts pygame
+```
+```yaml
+# config.yaml
+tts:
+  enabled: true
+  engine: edge
+  edge:
+    voice: zh-CN-XiaoxiaoNeural  # 女声温柔
+    rate: "+0%"
+```
+
+**使用 Fish Audio 动漫声优（如明日香、鸣人、路飞）：**
+```bash
+pip install fish-audio-sdk pygame
+```
+```yaml
+tts:
+  enabled: true
+  engine: fish
+  fish:
+    api_key: "your-fish-audio-api-key"  # https://fish.audio
+    reference_id: "角色模型UUID"          # 在 fish.audio 搜索角色，从 URL 复制 UUID
+```
 
 ## API 接口
 

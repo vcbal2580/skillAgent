@@ -38,6 +38,8 @@ Supports web search, a personal knowledge base, and custom skill plugins.
 | **Entertainment skills** | Built-in divination, tarot career reading, daily luck, and almanac skills |
 | **Knowledge base** | ChromaDB vector store for semantic retrieval of personal notes |
 | **Web search** | DuckDuckGo search — free, no API key required |
+| **Weather** | Real-time weather + multi-day forecast, no API key, IP auto-detection |
+| **TTS (voice output)** | 4 engines: edge-tts / pyttsx3 offline / DashScope CosyVoice / Fish Audio voice library |
 | **Persistence** | SQLite conversation history |
 | **API server** | FastAPI REST endpoints for future GUI integration |
 | **CLI** | Rich-powered interactive command-line interface |
@@ -137,7 +139,48 @@ python main.py server
 | `/help` | Show help |
 | `/reset` | Reset conversation history |
 | `/skills` | List registered skills |
+| `/tts` | Toggle voice output on/off at runtime |
 | `/quit` | Exit |
+
+> **Ctrl+C once** = skip current speech; **Ctrl+C twice** = exit the program.
+
+## Voice Output (TTS)
+
+Configured in `config.yaml`. See `config.example.yaml` for the full reference.
+
+| Engine | API Key | Online | Chinese Quality | Notes |
+|--------|---------|--------|-----------------|-------|
+| `edge` | None | Yes | ⭐⭐⭐⭐⭐ | Microsoft Neural TTS — recommended |
+| `pyttsx3` | None | Offline | ⭐⭐⭐ | System native engine, fully offline |
+| `dashscope` | DashScope | Yes | ⭐⭐⭐⭐⭐ | CosyVoice, reuses existing key |
+| `fish` | Fish Audio | Yes | ⭐⭐⭐⭐⭐ | Community voice library, anime characters supported |
+
+**Quick enable (edge-tts):**
+```bash
+pip install edge-tts pygame
+```
+```yaml
+# config.yaml
+tts:
+  enabled: true
+  engine: edge
+  edge:
+    voice: zh-CN-XiaoxiaoNeural
+    rate: "+0%"
+```
+
+**Using Fish Audio anime voices (e.g. Asuka, Naruto, Luffy):**
+```bash
+pip install fish-audio-sdk pygame
+```
+```yaml
+tts:
+  enabled: true
+  engine: fish
+  fish:
+    api_key: "your-fish-audio-api-key"  # https://fish.audio
+    reference_id: "character-model-uuid" # search on fish.audio, copy UUID from URL
+```
 
 ## API Endpoints
 
