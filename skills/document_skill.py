@@ -70,14 +70,131 @@ def extract_document(path: str) -> str:
             return f"[Error] Cannot read file: {e}"
 
 
-def extract_document_from_url(url: str) -> str:
-    """Download a document from URL to a temp file and extract its text."""
+def _extract_html_text(html_bytes: bytes, encoding: str = "utf-8") -> str:
+    """Extract readable text from HTML bytes using stdlib html.parser."""
+    from html.parser import HTMLParser
+
+    class _TextExtractor(HTMLParser):
+        SKIP_TAGS = {"script", "style", "noscript", "head", "meta", "link", "svg", "iframe"}
+
+        def __init__(self):
+            super().__init__()
+            self._skip = 0
+            self.parts: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag.lower() in self.SKIP_TAGS:
+                self._skip += 1
+
+        def handle_endtag(self, tag):
+            if tag.lower() in self.SKIP_TAGS and self._skip > 0:
+                self._skip -= 1
+
+        def handle_data(self, data):
+            if self._skip == 0:
+                stripped = data.strip()
+                if stripped:
+                    self.parts.append(stripped)
+
+    html_str = html_bytes.decode(encoding, errors="replace")
+    parser = _TextExtractor()
+    parser.feed(html_str)
+    return "\n".join(parser.parts)
+
+
+def extract_document_from_url(url: str, feishu_token: str = None) -> str:
+    """Fetch a URL and return its text content.
+
+    Handles two cases automatically:
+    * Web page (text/html)  → extracts readable text via HTML parser
+    * Document file (pdf/docx/xlsx/…) → downloads to temp file and extracts
+
+    Args:
+        url: HTTP(S) URL to fetch.
+        feishu_token: Optional Feishu/Lark user_access_token for private wiki pages.
+                      Configure via config.yaml key `feishu.token` or pass directly.
+    """
     import urllib.request
-    suffix = Path(url.split("?")[0]).suffix or ".bin"
+    import urllib.error
+
+    # ── Build request headers ──────────────────────────────────────────
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    }
+
+    # Feishu / Lark private document token
+    token = feishu_token
+    if not token:
+        try:
+            from core.config import config
+            token = config.get("feishu.token", None)
+        except Exception:
+            pass
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    req = urllib.request.Request(url, headers=headers)
+
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            content_type = resp.headers.get("Content-Type", "").lower()
+            raw = resp.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 403:
+            return (
+                f"[Error] Access denied (HTTP 403). "
+                f"If this is a private Feishu/Lark document, set `feishu.token` in config.yaml "
+                f"with your user_access_token.\nURL: {url}"
+            )
+        if e.code == 401:
+            return (
+                f"[Error] Authentication required (HTTP 401). "
+                f"Set `feishu.token` in config.yaml.\nURL: {url}"
+            )
+        return f"[Error] HTTP {e.code}: {e.reason}\nURL: {url}"
+    except Exception as e:
+        return f"[Error] Failed to fetch URL: {e}\nURL: {url}"
+
+    # ── HTML page → extract text ───────────────────────────────────────
+    if "text/html" in content_type or "text/xml" in content_type:
+        # Try to detect encoding from Content-Type header
+        encoding = "utf-8"
+        for part in content_type.split(";"):
+            part = part.strip()
+            if part.startswith("charset="):
+                encoding = part.split("=", 1)[1].strip()
+                break
+        text = _extract_html_text(raw, encoding)
+        if not text.strip():
+            return f"[Warning] No readable text found on page: {url}"
+        return text
+
+    # ── Binary document → save to temp file and extract ───────────────
+    suffix = Path(url.split("?")[0]).suffix
+    if not suffix:
+        # Infer from Content-Type
+        ct_map = {
+            "application/pdf": ".pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+            "application/msword": ".doc",
+        }
+        for ct_key, ext in ct_map.items():
+            if ct_key in content_type:
+                suffix = ext
+                break
+        suffix = suffix or ".bin"
+
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp_path = tmp.name
+        tmp.write(raw)
     try:
-        urllib.request.urlretrieve(url, tmp_path)
         return extract_document(tmp_path)
     finally:
         os.unlink(tmp_path)
@@ -88,9 +205,9 @@ class DocumentSkill(BaseSkill):
 
     name = "read_document"
     description = (
-        "Read and extract text from a document file (PDF, Word .docx, Excel .xlsx) "
-        "given a local file path or a public URL. "
-        "Use this when the user asks to analyse, summarize, or query a document."
+        "Read and extract text from a document file (PDF, Word .docx, Excel .xlsx), "
+        "a plain-text file, or a web page URL (including Feishu/Lark wiki pages). "
+        "Use this when the user asks to analyse, summarize, or query a document or webpage."
     )
     parameters = {
         "type": "object",

@@ -80,6 +80,14 @@ api:
   port: 8000
 
 # ============================================================
+# Feishu / Lark - optional, for reading private wiki documents
+# ============================================================
+# feishu:
+  # user_access_token for private Feishu wiki pages
+  # Obtain from: https://open.feishu.cn/  (developer console → token)
+  # token: "u-xxxxxxxxxxxxxxxxxxxx"
+
+# ============================================================
 # Multimodal - Vision (Image Understanding)
 # ============================================================
 # Set llm.vision_model to a vision-capable model.
