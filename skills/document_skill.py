@@ -71,49 +71,235 @@ def extract_document(path: str) -> str:
 
 
 def _extract_html_text(html_bytes: bytes, encoding: str = "utf-8") -> str:
-    """Extract readable text from HTML bytes using stdlib html.parser."""
+    """Extract readable text from HTML bytes.
+
+    Strategy:
+    1. Detect encoding from <meta charset> / <meta http-equiv> if not given
+    2. Prefer content inside <main>, <article>, <body> (in priority order)
+    3. Skip script / style / nav / footer / header noise
+    4. Insert line-breaks at block-level elements for readability
+    5. Collapse blank lines and deduplicate repeated whitespace
+    """
     from html.parser import HTMLParser
+    import re as _re
 
-    class _TextExtractor(HTMLParser):
-        SKIP_TAGS = {"script", "style", "noscript", "head", "meta", "link", "svg", "iframe"}
+    SKIP_TAGS = {
+        "script", "style", "noscript", "head", "meta", "link",
+        "svg", "iframe", "nav", "footer", "aside", "form",
+        "button", "input", "select", "option",
+    }
+    BLOCK_TAGS = {
+        "p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
+        "li", "tr", "td", "th", "br", "hr", "section",
+        "article", "main", "blockquote", "pre", "code",
+        "header", "figcaption", "caption",
+    }
+    PRIORITY_TAGS = ("main", "article", "body")  # prefer in this order
 
+    class _Extractor(HTMLParser):
         def __init__(self):
-            super().__init__()
+            super().__init__(convert_charrefs=True)
             self._skip = 0
             self.parts: list[str] = []
+            # track priority region
+            self._region: dict[str, list[str]] = {t: [] for t in PRIORITY_TAGS}
+            self._in_region: list[str] = []  # stack of active priority tags
+            self._depth: dict[str, int] = {t: 0 for t in PRIORITY_TAGS}
+            # meta charset detection
+            self.detected_encoding: str | None = None
 
         def handle_starttag(self, tag, attrs):
-            if tag.lower() in self.SKIP_TAGS:
+            tag = tag.lower()
+            attr_dict = dict(attrs)
+            # Detect charset from <meta>
+            if tag == "meta":
+                cs = attr_dict.get("charset", "")
+                if cs:
+                    self.detected_encoding = cs
+                elif attr_dict.get("http-equiv", "").lower() == "content-type":
+                    ct = attr_dict.get("content", "")
+                    m = _re.search(r"charset=([^\s;]+)", ct, _re.I)
+                    if m:
+                        self.detected_encoding = m.group(1)
+            if tag in SKIP_TAGS:
                 self._skip += 1
+            if tag in BLOCK_TAGS and self._skip == 0:
+                self.parts.append("\n")
+            if tag in PRIORITY_TAGS:
+                self._depth[tag] += 1
+                if self._depth[tag] == 1:
+                    self._in_region.append(tag)
 
         def handle_endtag(self, tag):
-            if tag.lower() in self.SKIP_TAGS and self._skip > 0:
+            tag = tag.lower()
+            if tag in SKIP_TAGS and self._skip > 0:
                 self._skip -= 1
+            if tag in BLOCK_TAGS and self._skip == 0:
+                self.parts.append("\n")
+            if tag in PRIORITY_TAGS and self._depth[tag] > 0:
+                self._depth[tag] -= 1
+                if self._depth[tag] == 0 and self._in_region and self._in_region[-1] == tag:
+                    self._in_region.pop()
 
         def handle_data(self, data):
-            if self._skip == 0:
-                stripped = data.strip()
-                if stripped:
-                    self.parts.append(stripped)
+            if self._skip:
+                return
+            stripped = data.strip()
+            if not stripped:
+                return
+            self.parts.append(stripped)
 
-    html_str = html_bytes.decode(encoding, errors="replace")
-    parser = _TextExtractor()
-    parser.feed(html_str)
-    return "\n".join(parser.parts)
+    # ── Decode with best-effort encoding ──────────────────────────────
+    parser = _Extractor()
+    # First pass: detect encoding from meta tags
+    try:
+        parser.feed(html_bytes[:4096].decode("utf-8", errors="replace"))
+    except Exception:
+        pass
+    detected = parser.detected_encoding
+    if detected:
+        try:
+            html_str = html_bytes.decode(detected, errors="replace")
+        except (LookupError, UnicodeDecodeError):
+            html_str = html_bytes.decode(encoding, errors="replace")
+    else:
+        html_str = html_bytes.decode(encoding, errors="replace")
+
+    # Full parse
+    parser2 = _Extractor()
+    try:
+        parser2.feed(html_str)
+    except Exception:
+        pass
+
+    raw_text = " ".join(parser2.parts)
+    # Collapse excess whitespace / blank lines
+    raw_text = _re.sub(r"[ \t]+", " ", raw_text)
+    raw_text = _re.sub(r"\n{3,}", "\n\n", raw_text)
+    return raw_text.strip()
+
+
+def _extract_feishu(url: str, token: str = None) -> str:
+    """Extract content from a Feishu/Lark wiki or doc URL via Open API.
+
+    Requires a user_access_token or tenant_access_token configured as
+    `feishu.token` in config.yaml.
+
+    Supported URL patterns:
+      https://*.feishu.cn/wiki/<node_token>
+      https://*.feishu.cn/docx/<document_id>
+      https://*.larkoffice.com/wiki/<node_token>
+      https://*.larksuite.com/wiki/<node_token>
+    """
+    import re
+    import json
+    import urllib.request
+    import urllib.error
+
+    if not token:
+        try:
+            from core.config import config
+            token = config.get("feishu.token", None)
+        except Exception:
+            pass
+
+    if not token:
+        return (
+            "[Error] Feishu/Lark documents require authentication.\n"
+            "Please set your user_access_token in config.yaml:\n\n"
+            "feishu:\n"
+            "  token: \"u-xxxxxxxxxxxxxxxxxxxx\"\n\n"
+            "Get your token at: https://open.feishu.cn/ → Developer Console → token"
+        )
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json; charset=utf-8",
+    }
+
+    # Detect base domain (feishu.cn / larkoffice.com / larksuite.com)
+    m = re.match(r"https?://[^/]*?(feishu\.cn|larkoffice\.com|larksuite\.com)", url)
+    base = f"https://open.{m.group(1)}" if m else "https://open.feishu.cn"
+
+    def _api_get(path: str) -> dict:
+        req = urllib.request.Request(f"{base}{path}", headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read())
+
+    # ── Case 1: wiki URL ──────────────────────────────────────────────
+    wiki_m = re.search(r"/wiki/([A-Za-z0-9]+)", url)
+    if wiki_m:
+        node_token = wiki_m.group(1)
+        try:
+            # Get node info to find obj_type and obj_token
+            node_resp = _api_get(f"/open-apis/wiki/v2/spaces/nodes?token={node_token}")
+            if node_resp.get("code") != 0:
+                return f"[Error] Feishu API: {node_resp.get('msg', 'unknown error')}"
+            node = node_resp.get("data", {}).get("node", {})
+            obj_type = node.get("obj_type", "")
+            obj_token = node.get("obj_token", node_token)
+        except Exception as e:
+            # Fall through to raw content attempt
+            obj_type = "docx"
+            obj_token = node_token
+
+        # Get raw text content from the resolved document
+        try:
+            if obj_type in ("docx", "doc", ""):
+                content_resp = _api_get(f"/open-apis/docx/v1/documents/{obj_token}/raw_content")
+                if content_resp.get("code") == 0:
+                    return content_resp.get("data", {}).get("content", "")
+            # Fallback: try sheet blocks
+            blocks_resp = _api_get(
+                f"/open-apis/docx/v1/documents/{obj_token}/blocks?document_revision_id=-1&page_size=200"
+            )
+            if blocks_resp.get("code") == 0:
+                texts = []
+                for blk in blocks_resp.get("data", {}).get("items", []):
+                    for elem in blk.get("text", {}).get("elements", []):
+                        t = elem.get("text_run", {}).get("content", "")
+                        if t:
+                            texts.append(t)
+                return "\n".join(texts)
+        except urllib.error.HTTPError as e:
+            return f"[Error] Feishu API HTTP {e.code}: {e.reason}"
+        except Exception as e:
+            return f"[Error] Feishu API error: {e}"
+
+    # ── Case 2: docx URL ─────────────────────────────────────────────
+    docx_m = re.search(r"/docx/([A-Za-z0-9]+)", url)
+    if docx_m:
+        doc_id = docx_m.group(1)
+        try:
+            content_resp = _api_get(f"/open-apis/docx/v1/documents/{doc_id}/raw_content")
+            if content_resp.get("code") == 0:
+                return content_resp.get("data", {}).get("content", "")
+            return f"[Error] Feishu API: {content_resp.get('msg', 'unknown error')}"
+        except Exception as e:
+            return f"[Error] Feishu API error: {e}"
+
+    return f"[Error] Unrecognised Feishu URL pattern: {url}"
 
 
 def extract_document_from_url(url: str, feishu_token: str = None) -> str:
     """Fetch a URL and return its text content.
 
-    Handles two cases automatically:
-    * Web page (text/html)  → extracts readable text via HTML parser
-    * Document file (pdf/docx/xlsx/…) → downloads to temp file and extracts
+    Handles automatically:
+    * Feishu/Lark wiki & docx URLs → Feishu Open API (requires feishu.token)
+    * Web page (text/html)         → extracts readable text via HTML parser
+    * Document file (pdf/docx/…)   → downloads to temp file and extracts
 
     Args:
-        url: HTTP(S) URL to fetch.
-        feishu_token: Optional Feishu/Lark user_access_token for private wiki pages.
-                      Configure via config.yaml key `feishu.token` or pass directly.
+        url: HTTP(S) URL.
+        feishu_token: Optional override for Feishu user_access_token.
+                      Falls back to config.yaml `feishu.token`.
     """
+    import re
+
+    # ── Route Feishu / Lark URLs to dedicated extractor ───────────────
+    if re.search(r"\.(feishu\.cn|larkoffice\.com|larksuite\.com)", url):
+        return _extract_feishu(url, token=feishu_token)
+
     import urllib.request
     import urllib.error
 
@@ -128,7 +314,7 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     }
 
-    # Feishu / Lark private document token
+    # Optional auth token (already handled for Feishu above, kept for generic use)
     token = feishu_token
     if not token:
         try:
@@ -140,9 +326,10 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
         headers["Authorization"] = f"Bearer {token}"
 
     req = urllib.request.Request(url, headers=headers)
+    opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
 
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with opener.open(req, timeout=20) as resp:
             content_type = resp.headers.get("Content-Type", "").lower()
             raw = resp.read()
     except urllib.error.HTTPError as e:
