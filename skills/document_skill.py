@@ -285,45 +285,32 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
     """Fetch a URL and return its text content.
 
     Handles automatically:
-    * Feishu/Lark wiki & docx URLs → Feishu Open API (requires feishu.token)
-    * Web page (text/html)         → extracts readable text via HTML parser
-    * Document file (pdf/docx/…)   → downloads to temp file and extracts
+    * Web page (text/html)    → extracts readable text via HTML parser
+    * Document file (pdf/…)   → downloads to temp file and extracts
 
     Args:
-        url: HTTP(S) URL.
-        feishu_token: Optional override for Feishu user_access_token.
-                      Falls back to config.yaml `feishu.token`.
+        url: HTTP(S) URL (including publicly accessible Feishu share links).
+        feishu_token: Unused, kept for API compatibility.
     """
-    import re
-
-    # ── Route Feishu / Lark URLs to dedicated extractor ───────────────
-    if re.search(r"\.(feishu\.cn|larkoffice\.com|larksuite\.com)", url):
-        return _extract_feishu(url, token=feishu_token)
-
     import urllib.request
     import urllib.error
 
-    # ── Build request headers ──────────────────────────────────────────
+    # ── Build request with a realistic browser User-Agent ─────────────
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/122.0.0.0 Safari/537.36"
         ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Accept": (
+            "text/html,application/xhtml+xml,application/xml;"
+            "q=0.9,image/avif,image/webp,*/*;q=0.8"
+        ),
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
     }
-
-    # Optional auth token (already handled for Feishu above, kept for generic use)
-    token = feishu_token
-    if not token:
-        try:
-            from core.config import config
-            token = config.get("feishu.token", None)
-        except Exception:
-            pass
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
 
     req = urllib.request.Request(url, headers=headers)
     opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
@@ -333,24 +320,12 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
             content_type = resp.headers.get("Content-Type", "").lower()
             raw = resp.read()
     except urllib.error.HTTPError as e:
-        if e.code == 403:
-            return (
-                f"[Error] Access denied (HTTP 403). "
-                f"If this is a private Feishu/Lark document, set `feishu.token` in config.yaml "
-                f"with your user_access_token.\nURL: {url}"
-            )
-        if e.code == 401:
-            return (
-                f"[Error] Authentication required (HTTP 401). "
-                f"Set `feishu.token` in config.yaml.\nURL: {url}"
-            )
         return f"[Error] HTTP {e.code}: {e.reason}\nURL: {url}"
     except Exception as e:
         return f"[Error] Failed to fetch URL: {e}\nURL: {url}"
 
     # ── HTML page → extract text ───────────────────────────────────────
     if "text/html" in content_type or "text/xml" in content_type:
-        # Try to detect encoding from Content-Type header
         encoding = "utf-8"
         for part in content_type.split(";"):
             part = part.strip()
