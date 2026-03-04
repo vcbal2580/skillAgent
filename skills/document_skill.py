@@ -281,11 +281,47 @@ def _extract_feishu(url: str, token: str = None) -> str:
     return f"[Error] Unrecognised Feishu URL pattern: {url}"
 
 
+def _fetch_with_playwright(url: str) -> str:
+    """Render a JS-heavy page with a headless Chromium browser and return its text.
+
+    Falls back gracefully if playwright is not installed.
+    """
+    try:
+        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+    except ImportError:
+        return ""
+
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/122.0.0.0 Safari/537.36"
+                ),
+                locale="zh-CN",
+            )
+            page = context.new_page()
+            page.goto(url, wait_until="networkidle", timeout=30000)
+            # Give JS-rendered content extra time to settle
+            page.wait_for_timeout(3000)
+            # Use inner_text to get the rendered visible text directly,
+            # which works reliably for SPAs like Feishu that don't support SSR.
+            text = page.inner_text("body")
+            browser.close()
+        return text.strip()
+    except Exception as e:
+        return f"[Error] Playwright render failed: {e}"
+
+
 def extract_document_from_url(url: str, feishu_token: str = None) -> str:
     """Fetch a URL and return its text content.
 
     Handles automatically:
-    * Web page (text/html)    → extracts readable text via HTML parser
+    * Web page (text/html)    → plain HTTP fetch + HTML parser;
+                                if result is too short (SPA / JS-rendered),
+                                automatically retries with headless Chromium
     * Document file (pdf/…)   → downloads to temp file and extracts
 
     Args:
@@ -307,22 +343,27 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
             "q=0.9,image/avif,image/webp,*/*;q=0.8"
         ),
         "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
     }
 
-    req = urllib.request.Request(url, headers=headers)
-    opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
+    raw = None
+    content_type = "text/html"
 
     try:
+        req = urllib.request.Request(url, headers=headers)
+        opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
         with opener.open(req, timeout=20) as resp:
-            content_type = resp.headers.get("Content-Type", "").lower()
+            content_type = resp.headers.get("Content-Type", "text/html").lower()
             raw = resp.read()
     except urllib.error.HTTPError as e:
+        # 3xx redirect loops (e.g. Feishu SPA) → let Playwright handle it
+        if 300 <= e.code < 400:
+            return _fetch_with_playwright(url)
         return f"[Error] HTTP {e.code}: {e.reason}\nURL: {url}"
-    except Exception as e:
-        return f"[Error] Failed to fetch URL: {e}\nURL: {url}"
+    except Exception:
+        # Redirect loop or other network issue → go straight to Playwright
+        return _fetch_with_playwright(url)
 
     # ── HTML page → extract text ───────────────────────────────────────
     if "text/html" in content_type or "text/xml" in content_type:
@@ -333,8 +374,10 @@ def extract_document_from_url(url: str, feishu_token: str = None) -> str:
                 encoding = part.split("=", 1)[1].strip()
                 break
         text = _extract_html_text(raw, encoding)
-        if not text.strip():
-            return f"[Warning] No readable text found on page: {url}"
+        # SPA pages (e.g. Feishu) return a JS shell with almost no text.
+        # Fall back to headless browser rendering when content is too thin.
+        if len(text.strip()) < 200:
+            return _fetch_with_playwright(url)
         return text
 
     # ── Binary document → save to temp file and extract ───────────────

@@ -10,6 +10,7 @@ rich>=13.7.0
 pypdf>=4.0.0           # PDF text extraction
 python-docx>=1.1.0     # Word .docx extraction
 openpyxl>=3.1.0        # Excel .xlsx extraction
+playwright>=1.40.0     # Headless browser for JS-rendered pages (run: playwright install chromium)
 
 # ── Multimodal: Voice input (optional, for /voice CLI and /chat/audio API) ──
 # sounddevice>=0.4.6   # microphone recording (required for /voice, uncomment if needed)
