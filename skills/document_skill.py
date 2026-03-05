@@ -6,10 +6,12 @@ then reason over its content or save it to the knowledge base.
 Supported formats:
   .pdf   - via pypdf
   .docx  - via python-docx
-  .xlsx / .xls - via openpyxl / xlrd
+  .xlsx  - via openpyxl
+  .xls   - via xlrd
+  .eml   - via Python built-in email module (no extra deps)
 
 Install optional dependencies:
-  pip install pypdf python-docx openpyxl
+  pip install pypdf python-docx openpyxl xlrd
 """
 
 import os
@@ -17,6 +19,119 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 from skills.base import BaseSkill
+
+
+def _extract_eml(path: str) -> str:
+    """Extract text from an .eml email file using Python's built-in email module.
+
+    Handles both single emails and full thread chains:
+    - Inline quoted text (lines with >) is preserved as-is in the body
+    - Embedded sub-messages (message/rfc822, common in Outlook/Exchange threads)
+      are recursively extracted with their own headers and body
+
+    Lists attachment filenames but does not extract their binary content.
+    """
+    import email
+    import email.policy
+    import html as html_mod
+    import re
+
+    def _strip_html(raw_html: str) -> str:
+        stripped = re.sub(r"<[^>]+>", " ", raw_html)
+        stripped = html_mod.unescape(stripped)
+        stripped = re.sub(r"[ \t]+", " ", stripped)
+        stripped = re.sub(r"\n{3,}", "\n\n", stripped)
+        return stripped.strip()
+
+    def _iter_parts(msg):
+        """Yield direct child parts without recursing into message/rfc822."""
+        if msg.is_multipart():
+            for part in msg.get_payload():
+                yield part
+        else:
+            yield msg
+
+    def _extract_msg(msg, depth: int = 0) -> str:
+        """Recursively extract one email message (or sub-message) into text."""
+        sections: list[str] = []
+
+        # ── Headers ──────────────────────────────────────────────────
+        header_lines = []
+        for h in ("Date", "From", "To", "CC", "Subject"):
+            val = msg.get(h, "")
+            if val:
+                header_lines.append(f"{h}: {val}")
+        if header_lines:
+            sections.append("\n".join(header_lines))
+
+        # ── Walk direct MIME parts only (no auto-recurse into rfc822) ─
+        plain_parts:  list[str] = []
+        html_parts:   list[str] = []
+        attachments:  list[str] = []
+        sub_messages: list[str] = []
+
+        def _process(part):
+            ct    = part.get_content_type()
+            disp  = str(part.get("Content-Disposition", ""))
+            fname = part.get_filename()
+
+            # ── Nested email thread (rfc822) ──────────────────────
+            if ct == "message/rfc822":
+                payload = part.get_payload()
+                subs = payload if isinstance(payload, list) else [payload]
+                for sub in subs:
+                    if hasattr(sub, "get"):           # is a Message object
+                        sub_messages.append(_extract_msg(sub, depth + 1))
+                return  # do NOT recurse further into this part
+
+            # ── Named attachment: record name only ────────────────
+            if fname or "attachment" in disp.lower():
+                if fname:
+                    attachments.append(fname)
+                return
+
+            # ── Multipart container: process children directly ────
+            if part.is_multipart():
+                for child in part.get_payload():
+                    _process(child)
+                return
+
+            # ── Leaf text parts ───────────────────────────────────
+            if ct == "text/plain":
+                try:
+                    text = part.get_content()
+                    if text and text.strip():
+                        plain_parts.append(text.strip())
+                except Exception:
+                    pass
+            elif ct == "text/html" and not plain_parts:
+                try:
+                    raw_html = part.get_content()
+                    stripped = _strip_html(raw_html)
+                    if stripped:
+                        html_parts.append(stripped)
+                except Exception:
+                    pass
+
+        _process(msg)
+
+        body = "\n\n".join(plain_parts) if plain_parts else "\n\n".join(html_parts)
+        if body:
+            sections.append(body)
+        if attachments:
+            sections.append("[附件 / Attachments]: " + ", ".join(attachments))
+
+        # Append embedded historical emails after current body
+        for i, sub_text in enumerate(sub_messages, 1):
+            sep = "─" * 40
+            sections.append(f"\n{sep}\n[线程历史 {i} / Thread History {i}]\n{sep}\n{sub_text}")
+
+        return "\n\n".join(s for s in sections if s)
+
+    with open(path, "rb") as f:
+        msg = email.message_from_binary_file(f, policy=email.policy.default)
+
+    return _extract_msg(msg)
 
 
 def _extract_pdf(path: str) -> str:
@@ -38,18 +153,159 @@ def _extract_docx(path: str) -> str:
     return "\n".join(para.text for para in doc.paragraphs)
 
 
-def _extract_xlsx(path: str) -> str:
+def _row_to_str(row, none_val="") -> str:
+    """Convert a row of cell values to a tab-separated string."""
+    parts = []
+    for v in row:
+        if v is None or v == "":
+            parts.append(none_val)
+        elif isinstance(v, float) and v == int(v):
+            parts.append(str(int(v)))
+        else:
+            parts.append(str(v))
+    return "\t".join(parts)
+
+
+def _xlsx_sheets(path: str) -> list[tuple[str, list[str]]]:
+    """Return list of (sheet_name, row_strings) for each sheet in an .xlsx file."""
     try:
         import openpyxl
     except ImportError:
-        return "[Error] openpyxl not installed. Run: pip install openpyxl"
+        raise ImportError("openpyxl not installed. Run: pip install openpyxl")
     wb = openpyxl.load_workbook(path, data_only=True)
-    parts = []
+    result = []
     for sheet in wb.worksheets:
-        parts.append(f"=== Sheet: {sheet.title} ===")
+        rows = []
         for row in sheet.iter_rows(values_only=True):
-            parts.append("\t".join("" if v is None else str(v) for v in row))
+            if all(v is None for v in row):
+                continue
+            rows.append(_row_to_str(row))
+        result.append((sheet.title, rows))
+    return result
+
+
+def _xls_sheets(path: str) -> list[tuple[str, list[str]]]:
+    """Return list of (sheet_name, row_strings) for each sheet in a .xls file."""
+    try:
+        import xlrd
+    except ImportError:
+        raise ImportError("xlrd not installed. Run: pip install xlrd")
+    wb = xlrd.open_workbook(path)
+    result = []
+    for sheet in wb.sheets():
+        rows = []
+        for row_idx in range(sheet.nrows):
+            row = sheet.row_values(row_idx)
+            if all(v == "" or v is None for v in row):
+                continue
+            rows.append(_row_to_str(row))
+        result.append((sheet.name, rows))
+    return result
+
+
+def _extract_xlsx(path: str) -> str:
+    """Extract text from .xlsx files using openpyxl."""
+    try:
+        sheets = _xlsx_sheets(path)
+    except ImportError as e:
+        return f"[Error] {e}"
+    parts = []
+    for name, rows in sheets:
+        parts.append(f"\n=== Sheet: {name} ({len(rows)} rows) ===")
+        parts.extend(rows)
     return "\n".join(parts)
+
+
+def _extract_xls(path: str) -> str:
+    """Extract text from legacy .xls files using xlrd."""
+    try:
+        sheets = _xls_sheets(path)
+    except ImportError as e:
+        return f"[Error] {e}"
+    parts = []
+    for name, rows in sheets:
+        parts.append(f"\n=== Sheet: {name} ({len(rows)} rows) ===")
+        parts.extend(rows)
+    return "\n".join(parts)
+
+
+def _chunk_text(text: str, chunk_chars: int = 3000, overlap: int = 200) -> list[str]:
+    """Split a long text into overlapping chunks."""
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_chars
+        chunks.append(text[start:end])
+        start = end - overlap
+    return chunks
+
+
+def extract_document_chunks(path: str, chunk_chars: int = 3000) -> list[dict]:
+    """Extract a document as labelled chunks suitable for knowledge base storage.
+
+    Returns a list of dicts: {"label": str, "text": str, "meta": dict}
+    Excel files are split per-sheet (then further chunked if a sheet is very large).
+    PDF/DOCX/text are split into overlapping text chunks.
+    """
+    suffix = Path(path).suffix.lower()
+    stem = Path(path).stem
+    chunks: list[dict] = []
+
+    if suffix in (".xlsx", ".xls"):
+        try:
+            sheets = _xlsx_sheets(path) if suffix == ".xlsx" else _xls_sheets(path)
+        except ImportError as e:
+            return [{"label": stem, "text": f"[Error] {e}", "meta": {}}]
+        for sheet_name, rows in sheets:
+            if not rows:
+                continue
+            header = rows[0] if rows else ""
+            sheet_text = f"[文件: {stem} | Sheet: {sheet_name}]\n" + "\n".join(rows)
+            if len(sheet_text) <= chunk_chars:
+                chunks.append({
+                    "label": f"{stem}_{sheet_name}",
+                    "text": sheet_text,
+                    "meta": {"file": stem, "sheet": sheet_name},
+                })
+            else:
+                # Split large sheets into row batches, always prepend header
+                batch_rows = []
+                batch_chars = len(f"[文件: {stem} | Sheet: {sheet_name}]\n{header}\n")
+                batch_num = 1
+                for row in rows[1:]:  # skip header for counting
+                    row_len = len(row) + 1
+                    if batch_chars + row_len > chunk_chars and batch_rows:
+                        text = f"[文件: {stem} | Sheet: {sheet_name} 第{batch_num}段]\n{header}\n" + "\n".join(batch_rows)
+                        chunks.append({
+                            "label": f"{stem}_{sheet_name}_p{batch_num}",
+                            "text": text,
+                            "meta": {"file": stem, "sheet": sheet_name, "part": batch_num},
+                        })
+                        batch_num += 1
+                        batch_rows = [row]
+                        batch_chars = len(f"[文件: {stem} | Sheet: {sheet_name} 第{batch_num}段]\n{header}\n") + row_len
+                    else:
+                        batch_rows.append(row)
+                        batch_chars += row_len
+                if batch_rows:
+                    text = f"[文件: {stem} | Sheet: {sheet_name} 第{batch_num}段]\n{header}\n" + "\n".join(batch_rows)
+                    chunks.append({
+                        "label": f"{stem}_{sheet_name}_p{batch_num}",
+                        "text": text,
+                        "meta": {"file": stem, "sheet": sheet_name, "part": batch_num},
+                    })
+    else:
+        full_text = extract_document(path)
+        if full_text.startswith("[Error]"):
+            return [{"label": stem, "text": full_text, "meta": {}}]
+        text_chunks = _chunk_text(full_text, chunk_chars)
+        for i, chunk in enumerate(text_chunks, 1):
+            chunks.append({
+                "label": f"{stem}_p{i}" if len(text_chunks) > 1 else stem,
+                "text": chunk,
+                "meta": {"file": stem, "part": i},
+            })
+    return chunks
 
 
 def extract_document(path: str) -> str:
@@ -59,8 +315,12 @@ def extract_document(path: str) -> str:
         return _extract_pdf(path)
     elif suffix in (".docx", ".doc"):
         return _extract_docx(path)
-    elif suffix in (".xlsx", ".xls"):
+    elif suffix == ".xlsx":
         return _extract_xlsx(path)
+    elif suffix == ".xls":
+        return _extract_xls(path)
+    elif suffix == ".eml":
+        return _extract_eml(path)
     else:
         # Try to read as plain text
         try:
@@ -410,22 +670,27 @@ class DocumentSkill(BaseSkill):
 
     name = "read_document"
     description = (
-        "Read and extract text from a document file (PDF, Word .docx, Excel .xlsx), "
-        "a plain-text file, or a web page URL (including Feishu/Lark wiki pages). "
-        "Use this when the user asks to analyse, summarize, or query a document or webpage."
+        "Read and extract text from a document file (PDF, Word .docx, Excel .xlsx/.xls, "
+        "Email .eml), a plain-text file, or a web page URL (including Feishu/Lark wiki pages). "
+        "Use this when the user asks to analyse, summarize, query a document/webpage/email, "
+        "or import a file into the knowledge base. "
+        "Set save_to_knowledge=true to import the entire file into the knowledge base "
+        "(Excel files are automatically split by sheet for accurate retrieval; "
+        ".eml emails are split into chunks if long)."
     )
     parameters = {
         "type": "object",
         "properties": {
             "source": {
                 "type": "string",
-                "description": "Local file path or public URL of the document.",
+                "description": "Local file path (absolute or relative) or public URL of the document.",
             },
             "save_to_knowledge": {
                 "type": "boolean",
                 "description": (
-                    "If true, also save the extracted text to the knowledge base "
-                    "so it can be retrieved in future conversations."
+                    "If true, save the entire document into the knowledge base in chunks "
+                    "so it can be retrieved in future conversations. "
+                    "Excel files are split per-sheet automatically."
                 ),
             },
         },
@@ -433,31 +698,79 @@ class DocumentSkill(BaseSkill):
     }
 
     def execute(self, source: str, save_to_knowledge: bool = False) -> str:
-        if source.startswith("http://") or source.startswith("https://"):
+        is_url = source.startswith("http://") or source.startswith("https://")
+
+        if is_url:
             text = extract_document_from_url(source)
-        else:
-            if not os.path.exists(source):
-                return f"[Error] File not found: {source}"
-            text = extract_document(source)
+            if not text.strip():
+                return "[Warning] No text extracted from the URL."
+            max_chars = 12000
+            truncated = text[:max_chars]
+            suffix_note = f"\n\n[Document truncated at {max_chars} chars]" if len(text) > max_chars else ""
+            if save_to_knowledge:
+                try:
+                    from knowledge.knowledge_manager import KnowledgeManager
+                    km = KnowledgeManager()
+                    text_chunks = _chunk_text(truncated, 3000)
+                    ids = []
+                    for i, chunk in enumerate(text_chunks, 1):
+                        doc_id = km.save(content=chunk, tags=["document", "web"], source=source)
+                        ids.append(doc_id)
+                    return truncated + suffix_note + f"\n\n[已存入知识库，共 {len(ids)} 条，IDs: {', '.join(ids)}]"
+                except Exception as e:
+                    return truncated + suffix_note + f"\n\n[存入知识库失败: {e}]"
+            return truncated + suffix_note
 
-        if not text.strip():
-            return "[Warning] No text extracted from the document."
+        # ── Local file ────────────────────────────────────────────────
+        # Resolve relative paths against cwd
+        resolved = source
+        if not os.path.isabs(source):
+            resolved = os.path.join(os.getcwd(), source)
+        if not os.path.exists(resolved):
+            return f"[Error] File not found: {source}\n(Looked at: {resolved})"
 
-        # Truncate very large documents to avoid exceeding context limits
-        max_chars = 12000
-        truncated = text[:max_chars]
-        suffix_note = f"\n\n[Document truncated at {max_chars} chars]" if len(text) > max_chars else ""
+        suffix = Path(resolved).suffix.lower()
+        stem = Path(resolved).stem
 
         if save_to_knowledge:
             try:
                 from knowledge.knowledge_manager import KnowledgeManager
                 km = KnowledgeManager()
-                doc_id = km.save(
-                    content=truncated,
-                    tags=["document", Path(source).stem],
+                doc_chunks = extract_document_chunks(resolved)
+                if not doc_chunks:
+                    return "[Warning] No content extracted from file."
+                if len(doc_chunks) == 1 and doc_chunks[0]["text"].startswith("[Error]"):
+                    return doc_chunks[0]["text"]
+                ids = []
+                for chunk in doc_chunks:
+                    tags = ["document", stem]
+                    if chunk["meta"].get("sheet"):
+                        tags.append(chunk["meta"]["sheet"])
+                    doc_id = km.save(content=chunk["text"], tags=tags, source=resolved)
+                    ids.append(doc_id)
+                # Return a short preview + summary
+                preview = extract_document(resolved)
+                preview_short = preview[:3000]
+                if suffix in (".xlsx", ".xls"):
+                    return (
+                        preview_short
+                        + f"\n\n[Excel 文件已全量导入知识库]"
+                        + f"\n[共 {len(doc_chunks)} 个分块，IDs: {', '.join(ids)}]"
+                    )
+                return (
+                    preview_short
+                    + f"\n\n[文件已导入知识库，共 {len(doc_chunks)} 个分块]"
+                    + f"\n[IDs: {', '.join(ids)}]"
                 )
-                return truncated + suffix_note + f"\n\n[已存入知识库，ID: {doc_id}]"
             except Exception as e:
-                return truncated + suffix_note + f"\n\n[存入知识库失败: {e}]"
+                import traceback
+                return f"[存入知识库失败: {e}]\n{traceback.format_exc()}"
 
+        # Just read and return (no save)
+        text = extract_document(resolved)
+        if not text.strip():
+            return "[Warning] No text extracted from the document."
+        max_chars = 12000
+        truncated = text[:max_chars]
+        suffix_note = f"\n\n[Document truncated at {max_chars} chars]" if len(text) > max_chars else ""
         return truncated + suffix_note
