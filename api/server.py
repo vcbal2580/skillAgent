@@ -169,15 +169,16 @@ async def upload_document(
     save_to_knowledge: bool = Form(False),
     question: Optional[str] = Form(None),
 ):
-    """Upload a document (PDF/docx/xlsx/txt). Optionally ask a question about it
-    or save it to the knowledge base.
+    """Upload a document (PDF/docx/xlsx/xls/txt). Optionally ask a question about it
+    or save it to the knowledge base (Excel files are split per-sheet).
 
     Returns:
-        text: Extracted raw text (first 12 000 chars).
+        text: Extracted raw text preview (first 12 000 chars).
         reply: Agent answer if `question` was provided, else null.
-        knowledge_id: Knowledge base ID if saved, else null.
+        knowledge_ids: List of knowledge base IDs if saved, else null.
+        chunks_saved: Number of chunks saved, if saved.
     """
-    from skills.document_skill import extract_document
+    from skills.document_skill import extract_document, extract_document_chunks
 
     suffix = os.path.splitext(file.filename or "doc.bin")[1] or ".bin"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
@@ -190,13 +191,22 @@ async def upload_document(
 
         max_chars = 12000
         preview = text[:max_chars]
-        knowledge_id = None
+        knowledge_ids = None
+        chunks_saved = None
 
         if save_to_knowledge:
             from knowledge.knowledge_manager import KnowledgeManager
             km = KnowledgeManager()
-            tags = ["document", os.path.splitext(file.filename or "")[0]]
-            knowledge_id = km.save(content=preview, tags=[t for t in tags if t])
+            stem = os.path.splitext(file.filename or "document")[0]
+            doc_chunks = extract_document_chunks(tmp_path)
+            knowledge_ids = []
+            for chunk in doc_chunks:
+                tags = ["document", stem]
+                if chunk["meta"].get("sheet"):
+                    tags.append(chunk["meta"]["sheet"])
+                doc_id = km.save(content=chunk["text"], tags=tags, source=file.filename or stem)
+                knowledge_ids.append(doc_id)
+            chunks_saved = len(knowledge_ids)
 
         reply = None
         if question:
@@ -206,7 +216,7 @@ async def upload_document(
             )
             reply = agent.chat(prompt)
 
-        return {"text": preview, "reply": reply, "knowledge_id": knowledge_id}
+        return {"text": preview, "reply": reply, "knowledge_ids": knowledge_ids, "chunks_saved": chunks_saved}
     except HTTPException:
         raise
     except Exception as e:
