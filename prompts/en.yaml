@@ -66,6 +66,16 @@ huangli_today:
   parameters:
     date: "Optional date in YYYY-MM-DD format (defaults to today)"
 
+wecom_notify:
+  description: >-
+    Send a message to a WeCom (企业微信) group via group robot webhook.
+    Supports text (with optional @mentions), markdown, and news card formats.
+    Use when the user wants to send a WeCom notification, alert, or reminder to a group.
+  parameters:
+    content: "Message body. Plain text for 'text', markdown string for 'markdown', JSON with title/description/url for 'news'"
+    msg_type: "Message format: text (default) | markdown | news"
+    mentioned_list: "Optional list of WeCom user IDs or phone numbers to @mention. Use ['@all'] to mention everyone."
+
 get_weather:
   description: >-
     Get real-time weather conditions and a multi-day forecast (up to 7 days)

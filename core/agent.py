@@ -30,6 +30,7 @@ class Agent:
         from skills.lucky_today_skill import LuckyTodaySkill
         from skills.almanac_skill import AlmanacSkill
         from skills.document_skill import DocumentSkill
+        from skills.wecom_notify_skill import WeComNotifySkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -40,6 +41,7 @@ class Agent:
         self.registry.register(LuckyTodaySkill())
         self.registry.register(AlmanacSkill())
         self.registry.register(DocumentSkill())
+        self.registry.register(WeComNotifySkill())
 
     # ------------------------------------------------------------------
     # Multimodal entry points
