@@ -38,14 +38,14 @@ Supports web search, a personal knowledge base, custom skill plugins, plus
 | **LLM abstraction** | OpenAI-compatible API — works with GPT, DeepSeek, Qwen, Ollama, etc. |
 | **Skill system** | Register skills via class inheritance; auto-maps to Function Calling |
 | **Entertainment skills** | Built-in divination, tarot career reading, daily luck, and almanac skills |
-| **Knowledge base** | ChromaDB vector store for semantic retrieval of personal notes |
+| **Knowledge base** | ChromaDB vector store for semantic retrieval of personal notes ([fully local, nothing goes to the cloud →](docs/knowledge-offline.md)) |
 | **Web search** | DuckDuckGo search — free, no API key required |
 | **Persistence** | SQLite conversation history |
 | **API server** | FastAPI REST endpoints for GUI integration |
 | **CLI** | Rich-powered interactive command-line interface |
 | **Image understanding ★** | Send local images or URLs to a vision model for analysis |
 | **Voice input ★** | Record mic or upload audio; STT transcribes to text then chats |
-| **Document parsing ★** | Read PDF / Word / Excel; optionally save content to knowledge base |
+| **Document parsing ★** | Read PDF / Word / Excel (xlsx/xls) / Email .eml; optionally save to knowledge base |
 
 ## Quick Start
 
@@ -145,7 +145,7 @@ python main.py server
 | `/quit` | Exit |
 | `/image <path\|URL>` | Send an image to the vision model for analysis |
 | `/voice [seconds]` | Record microphone (default 5 s), transcribe via STT, then chat |
-| `/doc <path\|URL>` | Read a document (PDF/docx/xlsx), optionally save to knowledge base |
+| `/doc <path\|URL>` | Read a document (PDF/docx/xlsx/xls/eml), optionally save to knowledge base |
 
 ### `/image` example
 
@@ -185,14 +185,16 @@ Saved to knowledge base, ID: xxxx-xxxx
 (Agent answers...)
 ```
 
-- Supported formats: `.pdf`, `.docx`, `.xlsx`, `.txt`
+- Supported formats: `.pdf`, `.docx`, `.xlsx`, `.xls`, `.eml`, `.txt`
 - After saving with `y`, the document content can be semantically searched in future conversations
+- Excel files are automatically split per-sheet for accurate retrieval
 
 > Install format-specific deps:
 > ```bash
 > pip install pypdf          # PDF
 > pip install python-docx   # Word
-> pip install openpyxl      # Excel
+> pip install openpyxl      # Excel .xlsx
+> pip install xlrd          # Excel .xls (legacy format)
 > ```
 
 ## API Endpoints
@@ -236,7 +238,7 @@ curl -X POST http://localhost:8000/upload/document \
   -F "file=@report.pdf" \
   -F "question=What are the key conclusions?" \
   -F "save_to_knowledge=true"
-# Returns: {"text": "...", "reply": "...", "knowledge_id": "xxx"}
+# Returns: {"text": "...", "reply": "...", "knowledge_ids": ["xxx", ...], "chunks_saved": 3}
 ```
 
 ## Multimodal Configuration

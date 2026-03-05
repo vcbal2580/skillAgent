@@ -36,14 +36,14 @@
 | **LLM 抽象** | OpenAI 兼容接口，支持 GPT / DeepSeek / Ollama 等 |
 | **技能系统** | 装饰器模式注册，自动映射 Function Calling |
 | **命理娱乐技能** | 内置天干地支八卦卜算、塔罗事业解读、今日好运、黄历技能 |
-| **知识库** | ChromaDB 向量存储，语义检索个人知识 |
+| **知识库** | ChromaDB 向量存储，语义检索个人知识（[完全本地，数据不上云 →](docs/knowledge-offline.md)） |
 | **联网搜索** | DuckDuckGo 免费搜索，无需 API Key |
 | **持久化** | SQLite 保存对话历史 |
 | **API 服务** | FastAPI REST 接口，为 GUI 预留 |
 | **CLI** | Rich 美化的交互式命令行 |
 | **图像理解 ★** | 上传本地图片或 URL，视觉模型分析内容 |
 | **语音输入 ★** | 麦克风录音或上传音频文件，STT 转文字后对话 |
-| **文档解析 ★** | 读取 PDF / Word / Excel，可存入知识库 |
+| **文档解析 ★** | 读取 PDF / Word / Excel（xlsx/xls）/ 邮件 .eml，可存入知识库 |
 
 ## 快速开始
 
@@ -159,7 +159,7 @@ python main.py server
 | `/quit` | 退出 |
 | `/image <路径或URL>` | 发送图片，视觉模型理解并回复 |
 | `/voice [秒数]` | 麦克风录音（默认 5 秒），STT 转文字后对话 |
-| `/doc <路径或URL>` | 读取文档（PDF/docx/xlsx），可选存入知识库 |
+| `/doc <路径或URL>` | 读取文档（PDF/docx/xlsx/xls/eml），可选存入知识库 |
 
 ### `/image` 使用示例
 
@@ -199,14 +199,16 @@ Save to knowledge base? (y/N) > y
 （Agent 回答…）
 ```
 
-- 支持格式：`.pdf`、`.docx`、`.xlsx`、`.txt`
+- 支持格式：`.pdf`、`.docx`、`.xlsx`、`.xls`、`.eml`、`.txt`
 - 输入 `y` 存入知识库后，后续对话可直接语义检索该文档内容
+- Excel 文件自动按 Sheet 切分成独立知识条目，提升检索精度
 
 > 需要安装对应依赖：
 > ```bash
 > pip install pypdf          # PDF
 > pip install python-docx   # Word
-> pip install openpyxl      # Excel
+> pip install openpyxl      # Excel .xlsx
+> pip install xlrd          # Excel .xls（旧格式）
 > ```
 
 ## API 接口
@@ -250,7 +252,7 @@ curl -X POST http://localhost:8000/upload/document \
   -F "file=@report.pdf" \
   -F "question=核心结论是什么？" \
   -F "save_to_knowledge=true"
-# 返回: {"text": "...", "reply": "...", "knowledge_id": "xxx"}
+# 返回: {"text": "...", "reply": "...", "knowledge_ids": ["xxx", ...], "chunks_saved": 3}
 ```
 
 ## 多模态配置
