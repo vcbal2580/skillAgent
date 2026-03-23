@@ -1,51 +1,50 @@
-# SkillAgent - 可扩展智能技能助手
+<div align="center">
+
+# 🤖 SkillAgent
+
+### 可扩展的多模态 AI 技能助手
 
 **中文** | [English](README.en.md)
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-009688?logo=fastapi&logoColor=white)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector%20DB-FF6B35)
 
-一个轻量级、可扩展的 AI 技能助手 MVP，基于 OpenAI Function Calling 驱动，支持联网搜索、个人知识库、自定义技能扩展，以及**图像理解、语音输入、文档解析**等多模态能力。
+> 用三行代码扩展一个新 AI 技能，让 LLM 自动在合适时机调用它。
 
-## 架构
+</div>
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    main.py (CLI/Server)              │
-├─────────────────────────────────────────────────────┤
-│                   core/agent.py                      │
-│              Agent Orchestrator                      │
-│    (LLM ⇄ Tool Calling 循环 / 多模态调度)            │
-├──────────┬──────────────┬───────────────────────────┤
-│ core/    │   skills/    │   knowledge/              │
-│ llm.py   │  registry.py │   vector_store.py         │
-│ context  │  base.py     │   knowledge_manager.py    │
-│ config   │  web_search  │                           │
-│ stt/     │  knowledge   │   storage/                │
-│ tts/     │  datetime    │   database.py (SQLite)    │
-│          │  document ★  │                           │
-├──────────┴──────────────┴───────────────────────────┤
-│                   api/server.py                      │
-│     FastAPI REST（文本 / 图像 / 音频 / 文档）         │
-└─────────────────────────────────────────────────────┘
-```
+---
 
-## 核心特性
+## ✨ 为什么选择 SkillAgent？
 
-| 特性 | 说明 |
+- **零门槛接入任意 LLM** — OpenAI / DeepSeek / Ollama 一行配置切换，不锁定厂商
+- **技能即插即用** — 继承 `BaseSkill`、写 `execute()`，注册一行，Agent 自动发现并调用
+- **真正的本地知识库** — ChromaDB 嵌入式向量存储，[数据永不上云](docs/knowledge-offline.md)
+- **多模态开箱即用** — 图片理解、语音输入、PDF / Word / Excel 文档解析，全部内置
+- **轻量可部署** — CLI 直接用，FastAPI 服务一键启动，无需复杂基础设施
+
+---
+
+## 🚀 核心能力
+
+| 能力 | 说明 |
 |------|------|
-| **LLM 抽象** | OpenAI 兼容接口，支持 GPT / DeepSeek / Ollama 等 |
-| **技能系统** | 装饰器模式注册，自动映射 Function Calling |
-| **命理娱乐技能** | 内置天干地支八卦卜算、塔罗事业解读、今日好运、黄历技能 |
-| **知识库** | ChromaDB 向量存储，语义检索个人知识（[完全本地，数据不上云 →](docs/knowledge-offline.md)） |
-| **联网搜索** | DuckDuckGo 免费搜索，无需 API Key |
-| **持久化** | SQLite 保存对话历史 |
-| **API 服务** | FastAPI REST 接口，为 GUI 预留 |
-| **CLI** | Rich 美化的交互式命令行 |
-| **图像理解 ★** | 上传本地图片或 URL，视觉模型分析内容 |
-| **语音输入 ★** | 麦克风录音或上传音频文件，STT 转文字后对话 |
-| **文档解析 ★** | 读取 PDF / Word / Excel（xlsx/xls）/ 邮件 .eml，可存入知识库 |
+| 🧠 **LLM 抽象** | OpenAI 兼容接口，GPT / DeepSeek / Ollama 等无缝切换 |
+| 🔧 **技能系统** | 装饰器注册，自动映射 Function Calling，3 步扩展新技能 |
+| 🌐 **联网搜索** | DuckDuckGo 免费实时搜索，无需任何 API Key |
+| 🗄️ **个人知识库** | ChromaDB 向量语义检索，完全本地，数据不离机 |
+| 🖼️ **图像理解** | 上传本地图片或 URL，多模态视觉模型分析 |
+| 🎙️ **语音输入** | 麦克风录音 / 上传音频，STT 转文字后自动对话 |
+| 📄 **文档解析** | PDF / Word / Excel / .eml 一键读取，可存入知识库 |
+| 🔮 **命理娱乐** | 天干地支卜算、塔罗事业解读、今日好运、黄历宜忌 |
+| 💬 **对话持久化** | SQLite 保存完整历史，重启不丢上下文 |
+| 🌍 **多语言 i18n** | GNU gettext，零依赖，配置一行切换中英文 |
 
-## 快速开始
+---
+
+## ⚡ 快速开始
 
 ### 方式一：一键初始化（推荐）
 
@@ -54,379 +53,341 @@ git clone <repo-url>
 cd skillAgent
 ```
 
-**Windows PowerShell：**
+<details open>
+<summary><b>Windows PowerShell</b></summary>
+
 ```powershell
 .\scripts\setup.ps1
 ```
+</details>
 
-**macOS / Linux：**
+<details>
+<summary><b>macOS / Linux</b></summary>
+
 ```bash
 bash scripts/setup.sh
 ```
+</details>
 
-脚本会自动完成：创建 `.venv` → 安装依赖 → 注册 `hi` 命令 → 复制 `config.example.yaml` → 提示填写 API Key。
+脚本自动完成：`创建 .venv` → `安装依赖` → `注册 hi 命令` → `复制配置文件` → `提示填写 API Key`，一步到位。
 
 ---
 
-### 方式二：手动步骤
+### 方式二：手动安装
 
-**Windows PowerShell：**
+<details>
+<summary><b>Windows PowerShell</b></summary>
+
 ```powershell
-git clone <repo-url>
-cd skillAgent
-
 python -m venv .venv
-
-# 激活虚拟环境
 .\.venv\Scripts\Activate.ps1
-# 如果提示"无法加载脚本"权限错误，先执行：
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
+# 若出现权限错误：Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 pip install -r requirements.txt
-pip install -e .   # 生成 hi 命令
+pip install -e .
 ```
+</details>
 
-**macOS / Linux：**
+<details>
+<summary><b>macOS / Linux</b></summary>
+
 ```bash
-git clone <repo-url>
-cd skillAgent
-
-python3 -m venv .venv
-
-# 激活虚拟环境
-source .venv/bin/activate
-
-pip install -r requirements.txt
-pip install -e .   # 生成 hi 命令
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && pip install -e .
 ```
+</details>
 
-> **原理**：`pyproject.toml` 的 `[project.scripts]` 定义了 `hi = "cli:main"`，
-> `pip install -e .` 在 `.venv/Scripts/` 生成 `hi.exe`（Windows）或 `hi`（Linux/macOS）。
-> editable 模式下修改代码无需重新安装。
+> `pip install -e .` 会在 `.venv/Scripts/` 生成 `hi` 命令，editable 模式修改代码后无需重新安装。
 
-### 配置
+---
+
+## ⚙️ 配置
 
 ```bash
 cp config.example.yaml config.yaml
-# 编辑 config.yaml，填入 API Key
 ```
 
-编辑 `config.yaml`，设置 LLM API：
+编辑 `config.yaml` 选择你的 LLM：
+
+<table>
+<tr><th>场景</th><th>配置示例</th></tr>
+<tr>
+<td>OpenAI / 兼容接口</td>
+<td>
 
 ```yaml
 llm:
-  provider: "openai"
-  api_key: "sk-xxx"        # 或设置环境变量 OPENAI_API_KEY
-  base_url: ""              # 自定义API地址(Ollama等)
+  api_key: "sk-xxx"
   model: "gpt-4o-mini"
 ```
+</td>
+</tr>
+<tr>
+<td>🦙 Ollama 本地模型</td>
+<td>
 
-**使用 Ollama 本地模型：**
 ```yaml
 llm:
   base_url: "http://localhost:11434/v1"
   api_key: "ollama"
   model: "qwen2.5:7b"
 ```
+</td>
+</tr>
+<tr>
+<td>DeepSeek</td>
+<td>
 
-**使用 DeepSeek：**
 ```yaml
 llm:
   base_url: "https://api.deepseek.com/v1"
   api_key: "sk-xxx"
   model: "deepseek-chat"
 ```
+</td>
+</tr>
+</table>
 
-### 4. 运行
+### 启动
 
-**CLI 交互模式（默认）：**
 ```bash
-python main.py
+python main.py          # CLI 交互模式
+python main.py server   # FastAPI 服务模式（端口 8000）
 ```
 
-**API 服务器模式：**
-```bash
-python main.py server
-```
+---
 
-## CLI 命令
+## 💻 CLI 命令
 
 | 命令 | 说明 |
 |------|------|
 | `/help` | 显示帮助 |
 | `/reset` | 重置对话历史 |
-| `/skills` | 显示已注册技能 |
+| `/skills` | 查看已注册的所有技能 |
+| `/image <路径或URL>` | 📷 发送图片，视觉模型解析内容 |
+| `/voice [秒数]` | 🎙️ 麦克风录音（默认 5 秒），语音转文字后对话 |
+| `/doc <路径或URL>` | 📄 读取文档并可存入个人知识库 |
 | `/quit` | 退出 |
-| `/image <路径或URL>` | 发送图片，视觉模型理解并回复 |
-| `/voice [秒数]` | 麦克风录音（默认 5 秒），STT 转文字后对话 |
-| `/doc <路径或URL>` | 读取文档（PDF/docx/xlsx/xls/eml），可选存入知识库 |
 
-### `/image` 使用示例
-
+**示例：图像理解**
 ```
 You > /image C:\Users\你\Pictures\screenshot.png
-Prompt (press Enter for default) > 这张截图里有什么错误信息？
+Prompt > 这张截图里有什么错误信息？
 ```
 
-也支持公开 URL：
-```
-You > /image https://example.com/chart.png
-```
-
-> 需要在 `config.yaml` 中设置视觉模型：
-> ```yaml
-> llm:
->   vision_model: "qwen-vl-plus"   # 或 gpt-4o、glm-4v 等
-> ```
-
-### `/voice` 使用示例
-
+**示例：语音输入**
 ```
 You > /voice 8
 [STT] Recording 8s - speak now...
-（Agent 根据语音内容回复）
 ```
 
-> 需要安装：`pip install sounddevice`，并在 `config.yaml` 配置 STT 引擎（见「多模态配置」）。
-
-### `/doc` 使用示例
-
+**示例：文档问答 + 存库**
 ```
 You > /doc F:\reports\Q4财务报告.pdf
-Question (press Enter to summarize) > 核心结论是什么？
+Question > 核心结论是什么？
 Save to knowledge base? (y/N) > y
-已存入知识库，ID: xxxx-xxxx
-（Agent 回答…）
+✓ 已存入知识库，Excel 自动按 Sheet 切分为独立条目
 ```
 
-- 支持格式：`.pdf`、`.docx`、`.xlsx`、`.xls`、`.eml`、`.txt`
-- 输入 `y` 存入知识库后，后续对话可直接语义检索该文档内容
-- Excel 文件自动按 Sheet 切分成独立知识条目，提升检索精度
+> 支持格式：`.pdf` `.docx` `.xlsx` `.xls` `.eml` `.txt`
 
-> 需要安装对应依赖：
-> ```bash
-> pip install pypdf          # PDF
-> pip install python-docx   # Word
-> pip install openpyxl      # Excel .xlsx
-> pip install xlrd          # Excel .xls（旧格式）
-> ```
+---
 
-## API 接口
+## 🌐 REST API
 
-启动 `python main.py server` 后：
+启动 `python main.py server` 后访问 `http://localhost:8000/docs` 查看交互式文档。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/chat` | 发送消息 `{"message": "..."}` |
-| POST | `/chat/reset` | 重置对话 |
-| POST | `/chat/image` | 图像对话 `{"message": "...", "image_url": "<URL或base64>"}` |
-| POST | `/chat/audio` | 上传音频文件（multipart），STT 后对话，返回转写文本和回复 |
-| POST | `/upload/document` | 上传文档（multipart），可附带 `question` 和 `save_to_knowledge` 参数 |
+| POST | `/chat` | 文本对话 `{"message": "..."}` |
+| POST | `/chat/image` | 图像对话，传入 URL 或 base64 |
+| POST | `/chat/audio` | 上传音频文件，返回转写文本和回复 |
+| POST | `/upload/document` | 上传文档，支持问答和存入知识库 |
 | GET | `/skills` | 获取技能列表 |
-| GET | `/knowledge` | 获取所有知识 |
-| POST | `/knowledge` | 保存知识 `{"content": "...", "tags": [...]}` |
-| DELETE | `/knowledge/{id}` | 删除知识 |
+| GET/POST/DELETE | `/knowledge` | 知识库 CRUD |
+| POST | `/chat/reset` | 重置对话 |
 | GET | `/health` | 健康检查 |
 
-### `/chat/image` 示例
-
 ```bash
+# 图像理解
 curl -X POST http://localhost:8000/chat/image \
   -H "Content-Type: application/json" \
   -d '{"message": "这张图里有什么？", "image_url": "https://example.com/pic.jpg"}'
-```
 
-### `/chat/audio` 示例
-
-```bash
+# 音频转写 + 对话
 curl -X POST http://localhost:8000/chat/audio \
-  -F "file=@recording.mp3" \
-  -F "language=zh"
-# 返回: {"reply": "...", "transcribed": "识别出的文字"}
-```
+  -F "file=@recording.mp3" -F "language=zh"
 
-### `/upload/document` 示例
-
-```bash
+# 文档问答
 curl -X POST http://localhost:8000/upload/document \
-  -F "file=@report.pdf" \
-  -F "question=核心结论是什么？" \
-  -F "save_to_knowledge=true"
-# 返回: {"text": "...", "reply": "...", "knowledge_ids": ["xxx", ...], "chunks_saved": 3}
+  -F "file=@report.pdf" -F "question=核心结论？" -F "save_to_knowledge=true"
 ```
 
-## 多模态配置
+---
 
-在 `config.yaml` 中添加以下配置：
+## 🔧 多模态配置
+
+在 `config.yaml` 中按需开启：
 
 ```yaml
 llm:
-  # 视觉模型（图片理解），不设置默认复用 llm.model
-  vision_model: "qwen-vl-plus"   # 或 gpt-4o、glm-4v 等
+  vision_model: "qwen-vl-plus"   # 视觉模型，留空则复用主模型
 
 stt:
-  # 语音识别引擎: disabled | openai | dashscope
-  engine: "openai"
-
-  # OpenAI Whisper：
-  openai_model: "whisper-1"      # 默认
-  # api_key / base_url 留空则复用 llm.api_key / llm.base_url
-  language: "zh"                 # 可选 BCP-47 语言提示
-
-  # 阿里云 DashScope Paraformer：
-  # engine: "dashscope"
+  engine: "openai"               # disabled | openai | dashscope
+  openai_model: "whisper-1"
+  language: "zh"
+  # engine: "dashscope"          # 阿里云 Paraformer（高精度中文）
   # api_key: "your-dashscope-api-key"
-  # language: "zh"
 ```
 
-### 多模态可选依赖
+**按需安装可选依赖：**
 
 ```bash
-# 文档解析
-pip install pypdf          # PDF
-pip install python-docx   # Word .docx
-pip install openpyxl      # Excel .xlsx
-
-# 语音（麦克风录音 + 本地音频文件解码）
-pip install sounddevice   # 麦克风录音
-pip install soundfile     # 本地音频文件解码（dashscope 本地文件转写需要）
-
-# DashScope STT
-pip install dashscope
+pip install pypdf python-docx openpyxl xlrd   # 文档解析
+pip install sounddevice soundfile             # 语音录制 / 解码
+pip install dashscope                         # 阿里云 STT
 ```
 
-## 扩展技能
+---
 
-创建新技能只需 3 步：
+## 🧩 扩展技能：3 步接入
 
-### 1. 创建技能文件 `skills/my_skill.py`
+SkillAgent 的核心设计理念：**技能即模块，写完即生效**。
+
+### 第一步：新建技能文件
 
 ```python
+# skills/my_skill.py
 from skills.base import BaseSkill
 
 class MySkill(BaseSkill):
     name = "my_skill"
-    description = "描述这个技能做什么，LLM 会根据此决定何时调用"
+    description = "描述这个技能做什么 —— LLM 根据此决定何时调用它"
     parameters = {
         "type": "object",
         "properties": {
-            "param1": {
-                "type": "string",
-                "description": "参数说明",
-            },
+            "param1": {"type": "string", "description": "参数说明"},
         },
         "required": ["param1"],
     }
 
     def execute(self, param1: str) -> str:
-        # 实现你的逻辑
         return f"结果: {param1}"
 ```
 
-### 2. 注册技能
-
-在 `core/agent.py` 的 `register_default_skills()` 中添加：
+### 第二步：注册到 Agent
 
 ```python
+# core/agent.py → register_default_skills()
 from skills.my_skill import MySkill
 self.registry.register(MySkill())
 ```
 
-### 3. 完成！
+### 第三步：完成 🎉
 
-LLM 会自动识别并在合适时机调用你的新技能。
+LLM 会自动识别新技能并在合适时机调用它，无需任何其他改动。
 
-## 项目结构
+---
+
+## 🗂️ 项目结构
 
 ```
-aiagent/
-├── main.py                  # 入口 (CLI + Server)
+skillAgent/
+├── main.py                  # 入口（CLI + Server）
 ├── config.yaml              # 配置文件
-├── requirements.txt         # Python 依赖
 ├── core/
-│   ├── agent.py             # Agent 编排器（含多模态调度）
+│   ├── agent.py             # Agent 编排器（LLM ⇄ Tool Calling 循环）
 │   ├── llm.py               # LLM 客户端（文本 + 视觉）
 │   ├── config.py            # 配置管理
-│   ├── context.py           # 对话上下文管理
-│   ├── stt/                 # 语音识别引擎层 ★
-│   │   ├── __init__.py      # 工厂函数 get_stt_engine()
-│   │   ├── engine_disabled.py
-│   │   ├── engine_openai.py # OpenAI Whisper
-│   │   └── engine_dashscope.py # 阿里云 Paraformer
-│   └── tts/                 # 语音合成引擎层
-├── knowledge/
-│   ├── vector_store.py      # ChromaDB 向量存储
-│   └── knowledge_manager.py # 知识 CRUD
-├── skills/
-│   ├── base.py              # 技能基类
-│   ├── registry.py          # 技能注册中心
-│   ├── web_search.py        # 联网搜索技能
-│   ├── knowledge_skill.py   # 知识管理技能
-│   ├── datetime_skill.py    # 日期时间技能
-│   ├── document_skill.py    # 文档解析技能 ★
-│   ├── divination_skill.py  # 天干地支/八卦卜算
-│   ├── tarot_career_skill.py# 塔罗事业解读
-│   ├── lucky_today_skill.py # 今日好运
-│   └── almanac_skill.py     # 黄历宜忌
-├── storage/
-│   └── database.py          # SQLite 对话存储
-├── api/
-│   └── server.py            # FastAPI REST API（含多模态接口）★
-└── data/                    # 运行时数据 (自动创建)
-    ├── chromadb/             # 向量数据库
-    └── agent.db              # SQLite 数据库
-```
-
-## 国际化 / Internationalization (i18n)
-
-本项目使用 GNU gettext 标准方案实现多语言支持，**零额外依赖**（Python 内置 `gettext` 模块）。
-
-### 切换语言
-
-编辑 `config.yaml`：
-```yaml
-language: zh   # 中文（默认）
-language: en   # English（回退到 msgid 英文原文）
-```
-
-### 目录结构
-
-```
-locales/
-└── zh/
-    └── LC_MESSAGES/
-        ├── messages.po   # 可编辑翻译源文件
-        └── messages.mo   # 编译后的二进制（已预编译提交）
-```
-
-### 添加新语言
-
-1. 复制并新建语言目录，例如 `locales/ja/LC_MESSAGES/messages.po`
-2. 翻译 `msgstr` 字段
-3. 编译：
-   ```bash
-   python scripts/compile_messages.py
-   ```
-4. 在 `config.yaml` 中设置 `language: ja`
-
-### 在代码中标记可翻译字符串
-
-```python
-from core.i18n import _
-print(_("No search results found."))   # 自动对应当前语言
+│   ├── context.py           # 对话上下文
+│   └── stt/                 # 语音识别引擎层
+│       ├── engine_openai.py     # OpenAI Whisper
+│       └── engine_dashscope.py  # 阿里云 Paraformer
+├── skills/                  # 技能模块（可自由扩展）
+│   ├── base.py / registry.py
+│   ├── web_search.py        # 联网搜索
+│   ├── document_skill.py    # 文档解析
+│   ├── knowledge_skill.py   # 知识库管理
+│   ├── divination_skill.py  # 八卦卜算
+│   ├── tarot_career_skill.py
+│   ├── lucky_today_skill.py
+│   └── almanac_skill.py
+├── knowledge/               # ChromaDB 向量存储
+├── storage/                 # SQLite 对话历史
+├── api/server.py            # FastAPI REST 服务
+├── locales/                 # i18n 翻译文件
+└── data/                    # 运行时数据（自动创建）
 ```
 
 ---
 
-## 技术栈
+## 🌍 多语言支持（i18n）
 
-- **Python 3.11+**
-- **OpenAI SDK** - LLM 调用 (兼容任何 OpenAI API 格式)
-- **ChromaDB** - 嵌入式向量数据库
-- **DuckDuckGo Search** - 免费网页搜索
-- **FastAPI + Uvicorn** - REST API 服务
-- **SQLite** - 对话历史持久化
-- **Rich** - 终端美化
-- **pypdf / python-docx / openpyxl** - 文档解析（可选）
-- **sounddevice / soundfile** - 麦克风录音 / 音频解码（可选）
-- **dashscope** - 阿里云 STT（可选）
+基于 Python 内置 `gettext`，**零额外依赖**。
+
+```yaml
+# config.yaml
+language: zh   # 中文
+language: en   # English
+```
+
+**添加新语言（以日语为例）：**
+
+1. 新建 `locales/ja/LC_MESSAGES/messages.po` 并翻译
+2. 编译：`python scripts/compile_messages.py`
+3. 设置 `language: ja`
+
+**在代码中标记可翻译字符串：**
+```python
+from core.i18n import _
+print(_("No search results found."))
+```
+
+---
+
+## 🏗️ 系统架构
+
+```
+┌──────────────────────────────────────────────────────┐
+│              main.py  (CLI / API Server)             │
+├──────────────────────────────────────────────────────┤
+│                  core/agent.py                       │
+│           Agent Orchestrator                         │
+│     LLM ⇄ Tool Calling 循环 · 多模态调度             │
+├─────────────┬──────────────┬────────────────────────┤
+│   core/     │   skills/    │   knowledge/           │
+│   llm.py    │  registry    │   ChromaDB             │
+│   config    │  web_search  │   knowledge_manager    │
+│   context   │  document    │                        │
+│   stt/      │  datetime    │   storage/             │
+│   tts/      │  divination  │   SQLite               │
+├─────────────┴──────────────┴────────────────────────┤
+│              api/server.py  (FastAPI REST)           │
+│       文本 · 图像 · 音频 · 文档 · 知识库              │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📦 技术栈
+
+| 组件 | 用途 |
+|------|------|
+| **Python 3.11+** | 运行环境 |
+| **OpenAI SDK** | LLM 调用（兼容任何 OpenAI API 格式） |
+| **ChromaDB** | 嵌入式向量数据库，本地语义检索 |
+| **FastAPI + Uvicorn** | REST API 服务 |
+| **DuckDuckGo Search** | 免费联网搜索，无需 API Key |
+| **SQLite** | 对话历史持久化 |
+| **Rich** | 终端美化输出 |
+| **pypdf / python-docx / openpyxl** | 文档解析（可选） |
+| **sounddevice / soundfile** | 麦克风录音 / 音频解码（可选） |
+| **dashscope** | 阿里云 STT，高精度中文语音识别（可选） |
+
+---
+
+<div align="center">
+
+Made with ❤️ · MIT + Commons Clause License
+
+</div>
