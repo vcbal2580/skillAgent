@@ -60,6 +60,17 @@ huangli_today:
   parameters:
     date: "可选，日期格式 YYYY-MM-DD，不填则默认今天"
 
+wecom_notify:
+  description: >-
+    通过企业微信群机器人 Webhook 发送消息到指定群组。
+    支持三种格式：
+    text（纯文本，可 @成员）、markdown（富文本排版）、news（图文卡片）。
+    当用户说「发企业微信」「通知群里」「推送消息」时调用此工具。
+  parameters:
+    content: "消息内容。text/markdown 直接填文字；news 填 JSON，包含 title、description、url 字段"
+    msg_type: "消息类型：text（默认）| markdown | news"
+    mentioned_list: "可选，要 @ 的成员 ID 或手机号列表，如 ['zhangsan', '13800001234']；@所有人填 ['@all']"
+
 get_weather:
   description: >-
     查询任意城市的实时天气与多日天气预报（最多 7 天）。
