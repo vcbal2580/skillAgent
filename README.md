@@ -34,6 +34,8 @@
 | 🧠 **LLM 抽象** | OpenAI 兼容接口，GPT / DeepSeek / Ollama 等无缝切换 |
 | 🔧 **技能系统** | 装饰器注册，自动映射 Function Calling，3 步扩展新技能 |
 | 🌐 **联网搜索** | DuckDuckGo 免费实时搜索，无需任何 API Key |
+| 📰 **新闻工作流** | 一句话创建本地新闻时间轴服务，定时自动刷新并生成 AI 总结 |
+| 📊 **Git 提交总结** | 一键汇总日报/周报，可按作者和仓库过滤提交记录 |
 | 🗄️ **个人知识库** | ChromaDB 向量语义检索，完全本地，数据不离机 |
 | 🖼️ **图像理解** | 上传本地图片或 URL，多模态视觉模型分析 |
 | 🎙️ **语音输入** | 麦克风录音 / 上传音频，STT 转文字后自动对话 |
@@ -163,6 +165,7 @@ python main.py server   # FastAPI 服务模式（端口 8000）
 | `/help` | 显示帮助 |
 | `/reset` | 重置对话历史 |
 | `/skills` | 查看已注册的所有技能 |
+| `/workflows` | 查看运行中的本地工作流服务（如新闻时间轴） |
 | `/image <路径或URL>` | 📷 发送图片，视觉模型解析内容 |
 | `/voice [秒数]` | 🎙️ 麦克风录音（默认 5 秒），语音转文字后对话 |
 | `/doc <路径或URL>` | 📄 读取文档并可存入个人知识库 |
@@ -203,6 +206,8 @@ Save to knowledge base? (y/N) > y
 | POST | `/chat/audio` | 上传音频文件，返回转写文本和回复 |
 | POST | `/upload/document` | 上传文档，支持问答和存入知识库 |
 | GET | `/skills` | 获取技能列表 |
+| GET | `/workflows` | 获取运行中的工作流服务列表 |
+| DELETE | `/workflows/{name}` | 停止指定工作流服务 |
 | GET/POST/DELETE | `/knowledge` | 知识库 CRUD |
 | POST | `/chat/reset` | 重置对话 |
 | GET | `/health` | 健康检查 |
@@ -220,7 +225,26 @@ curl -X POST http://localhost:8000/chat/audio \
 # 文档问答
 curl -X POST http://localhost:8000/upload/document \
   -F "file=@report.pdf" -F "question=核心结论？" -F "save_to_knowledge=true"
+
+# 查看运行中的工作流
+curl http://localhost:8000/workflows
+
+# 停止指定工作流
+curl -X DELETE http://localhost:8000/workflows/news_AI最新新闻
 ```
+
+---
+
+## 📰 新闻工作流（自动总结）
+
+当你说「我想追踪 AI 最新新闻」时，Agent 会自动调用 `news_workflow` 技能：
+
+1. 抓取最新新闻
+2. 启动本地时间轴页面（`127.0.0.1`）
+3. 按设定间隔自动刷新（例如每 60 分钟）
+4. 每次刷新后自动生成「总览 + 要点 + 趋势」AI 总结
+
+在页面中你会先看到 AI 总结卡片，再看到可点击原文链接的新闻时间轴。
 
 ---
 

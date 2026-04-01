@@ -34,6 +34,8 @@
 | 🧠 **LLM Abstraction** | OpenAI-compatible — GPT / DeepSeek / Ollama / Qwen seamlessly switchable |
 | 🔧 **Skill System** | Class-based registration, auto-maps to Function Calling, 3-step extensibility |
 | 🌐 **Web Search** | DuckDuckGo real-time search — free, no API key needed |
+| 📰 **News Workflow** | Create a local live news timeline in one request, auto-refresh with AI summaries |
+| 📊 **Git Summary** | Generate daily/weekly git commit summaries with repo/author filters |
 | 🗄️ **Personal Knowledge Base** | ChromaDB semantic retrieval, fully local, data stays on device |
 | 🖼️ **Image Understanding** | Upload local images or URLs, vision model analyzes content |
 | 🎙️ **Voice Input** | Mic recording or audio upload — STT transcription then conversation |
@@ -163,6 +165,7 @@ python main.py server   # FastAPI server (port 8000)
 | `/help` | Show help |
 | `/reset` | Reset conversation history |
 | `/skills` | List all registered skills |
+| `/workflows` | List running local workflow services (e.g., news timelines) |
 | `/image <path\|URL>` | 📷 Send image to vision model |
 | `/voice [seconds]` | 🎙️ Record mic (default 5 s), transcribe via STT, then chat |
 | `/doc <path\|URL>` | 📄 Read a document, optionally save to knowledge base |
@@ -203,6 +206,8 @@ Start the server with `python main.py server`, then open `http://localhost:8000/
 | POST | `/chat/audio` | Upload audio file, returns transcription + reply |
 | POST | `/upload/document` | Upload document, supports Q&A and saving to KB |
 | GET | `/skills` | List registered skills |
+| GET | `/workflows` | List running workflow services |
+| DELETE | `/workflows/{name}` | Stop a specific workflow service |
 | GET/POST/DELETE | `/knowledge` | Knowledge base CRUD |
 | POST | `/chat/reset` | Reset conversation |
 | GET | `/health` | Health check |
@@ -220,7 +225,26 @@ curl -X POST http://localhost:8000/chat/audio \
 # Document Q&A
 curl -X POST http://localhost:8000/upload/document \
   -F "file=@report.pdf" -F "question=Key conclusions?" -F "save_to_knowledge=true"
+
+# List running workflows
+curl http://localhost:8000/workflows
+
+# Stop a workflow
+curl -X DELETE http://localhost:8000/workflows/news_AI_latest_news
 ```
+
+---
+
+## 📰 News Workflow (Auto Summary)
+
+When you ask something like "Track the latest AI news", the agent can call `news_workflow` automatically to:
+
+1. Fetch latest news items
+2. Start a local timeline page on `127.0.0.1`
+3. Refresh data on a configurable interval (for example every 60 minutes)
+4. Generate an AI summary on each refresh (overview + key points + trend)
+
+The page shows an AI summary card first, followed by a clickable news timeline.
 
 ---
 
