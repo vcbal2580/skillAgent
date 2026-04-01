@@ -70,6 +70,7 @@ def run_cli():
                         _("/help              - Show help\n"
                           "/reset             - Reset conversation history\n"
                           "/skills            - Show registered skills\n"
+                          "/workflows         - List running workflow services\n"
                           "/image <path|url>  - Send an image for visual analysis\n"
                           "/voice [seconds]   - Record microphone and transcribe (default 5s)\n"
                           "/doc <path|url>    - Read & analyse a document (PDF/docx/xlsx), optional save to knowledge base\n"
@@ -79,6 +80,27 @@ def run_cli():
                         title=_("Help"),
                         border_style="green",
                     ))
+                    continue
+                elif cmd == "/workflows":
+                    from skills.workflow_service import WorkflowManager
+                    wf_manager = WorkflowManager()
+                    workflows = wf_manager.list_workflows()
+                    if not workflows:
+                        console.print("[yellow]当前没有运行中的工作流服务。[/yellow]")
+                    else:
+                        lines = []
+                        for wf in workflows:
+                            lines.append(
+                                f"• [bold]{wf['name']}[/bold] — [cyan]{wf['url']}[/cyan]\n"
+                                f"  刷新间隔: {wf['refresh_seconds'] // 60}分钟 | "
+                                f"最近更新: {wf['last_updated']} | "
+                                f"创建时间: {wf['created_at']}"
+                            )
+                        console.print(Panel(
+                            "\n".join(lines),
+                            title="运行中的工作流",
+                            border_style="blue",
+                        ))
                     continue
                 elif user_input.lower().startswith("/image "):
                     image_source = user_input[7:].strip()

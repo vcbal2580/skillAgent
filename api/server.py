@@ -119,6 +119,28 @@ async def health():
 
 
 # ──────────────────────────────────────────────────────────
+# Workflow management endpoints
+# ──────────────────────────────────────────────────────────
+
+@app.get("/workflows")
+async def list_workflows():
+    """List all running workflow services."""
+    from skills.workflow_service import WorkflowManager
+    manager = WorkflowManager()
+    return {"workflows": manager.list_workflows()}
+
+
+@app.delete("/workflows/{name}")
+async def stop_workflow(name: str):
+    """Stop a running workflow service."""
+    from skills.workflow_service import WorkflowManager
+    manager = WorkflowManager()
+    if manager.stop_workflow(name):
+        return {"status": "stopped", "name": name}
+    raise HTTPException(status_code=404, detail=f"Workflow '{name}' not found")
+
+
+# ──────────────────────────────────────────────────────────
 # Multimodal endpoints
 # ──────────────────────────────────────────────────────────
 

@@ -31,6 +31,8 @@ class Agent:
         from skills.almanac_skill import AlmanacSkill
         from skills.document_skill import DocumentSkill
         from skills.wecom_notify_skill import WeComNotifySkill
+        from skills.git_summary_skill import GitSummarySkill
+        from skills.news_workflow_skill import NewsWorkflowSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -42,6 +44,8 @@ class Agent:
         self.registry.register(AlmanacSkill())
         self.registry.register(DocumentSkill())
         self.registry.register(WeComNotifySkill())
+        self.registry.register(GitSummarySkill())
+        self.registry.register(NewsWorkflowSkill())
 
     # ------------------------------------------------------------------
     # Multimodal entry points
