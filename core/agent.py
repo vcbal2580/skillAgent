@@ -39,6 +39,7 @@ class Agent:
         from skills.workflow_dashboard_skill import WorkflowDashboardSkill
         from skills.research_workflow_skill import ResearchWorkflowSkill
         from skills.monitor_workflow_skill import MonitorWorkflowSkill
+        from skills.comparison_workflow_skill import ComparisonWorkflowSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -58,6 +59,7 @@ class Agent:
         self.registry.register(WorkflowDashboardSkill())
         self.registry.register(ResearchWorkflowSkill())
         self.registry.register(MonitorWorkflowSkill())
+        self.registry.register(ComparisonWorkflowSkill())
 
     # ------------------------------------------------------------------
     # Multimodal entry points
