@@ -432,7 +432,7 @@ class NewsWorkflowSkill(BaseSkill):
                 with DDGS() as ddgs:
                     # Attempt 1: ddgs.news() — gives richer metadata
                     try:
-                        results = list(ddgs.news(query, max_results=max_results))
+                        results = list(ddgs.news(query, max_results=max_results, timelimit="d"))
                     except Exception:
                         results = None
 
@@ -440,7 +440,7 @@ class NewsWorkflowSkill(BaseSkill):
                     if not results:
                         news_query = f"{query} 最新新闻 news"
                         try:
-                            results = list(ddgs.text(news_query, max_results=max_results))
+                            results = list(ddgs.text(news_query, max_results=max_results, timelimit="d"))
                         except Exception:
                             results = None
             finally:
