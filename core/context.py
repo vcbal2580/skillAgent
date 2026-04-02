@@ -16,7 +16,12 @@ class ContextManager:
 
     def get_messages(self) -> list[dict]:
         """Get full message list including system prompt."""
-        system_msg = {"role": "system", "content": self.system_prompt}
+        from datetime import datetime
+        _weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+        now = datetime.now()
+        time_hint = now.strftime("%Y年%m月%d日 %H:%M") + " " + _weekdays[now.weekday()]
+        system_content = f"【当前系统时间：{time_hint}】\n\n{self.system_prompt}"
+        system_msg = {"role": "system", "content": system_content}
         return [system_msg] + self.messages
 
     def add_user_message(self, content: str):
