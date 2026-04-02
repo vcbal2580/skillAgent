@@ -119,8 +119,8 @@ class WorkflowInstance:
         """Export current HTML template to PDF and return output path."""
         try:
             from weasyprint import HTML
-        except ImportError as e:
-            raise RuntimeError("weasyprint is required for PDF export") from e
+        except Exception as e:
+            raise RuntimeError(f"weasyprint unavailable: {e}") from e
 
         if not output_path:
             export_dir = Path("data") / "exports"
