@@ -46,6 +46,24 @@ class KnowledgeRequest(BaseModel):
     tags: list[str] = []
 
 
+class ResearchWorkflowRequest(BaseModel):
+    query: str
+    depth: str = "standard"
+    with_pdf: bool = False
+
+
+class MonitorWorkflowRequest(BaseModel):
+    target: str
+    interval_minutes: int = 10
+    condition: str = "any_change"
+
+
+class ComparisonWorkflowRequest(BaseModel):
+    targets: list[str]
+    focus: str = "overview"
+    with_tables: bool = True
+
+
 @app.on_event("startup")
 async def startup():
     global agent
@@ -138,6 +156,56 @@ async def stop_workflow(name: str):
     if manager.stop_workflow(name):
         return {"status": "stopped", "name": name}
     raise HTTPException(status_code=404, detail=f"Workflow '{name}' not found")
+
+
+@app.post("/workflows/research", response_model=ChatResponse)
+async def run_research_workflow(req: ResearchWorkflowRequest):
+    """Trigger research workflow skill by API."""
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query cannot be empty")
+    try:
+        reply = agent.registry.execute("research_workflow", {
+            "query": req.query,
+            "depth": req.depth,
+            "with_pdf": req.with_pdf,
+        })
+        return ChatResponse(reply=reply)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflows/monitor", response_model=ChatResponse)
+async def run_monitor_workflow(req: MonitorWorkflowRequest):
+    """Trigger monitor workflow skill by API."""
+    if not req.target.strip():
+        raise HTTPException(status_code=400, detail="target cannot be empty")
+    try:
+        reply = agent.registry.execute("monitor_workflow", {
+            "target": req.target,
+            "interval_minutes": req.interval_minutes,
+            "condition": req.condition,
+        })
+        return ChatResponse(reply=reply)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflows/compare", response_model=ChatResponse)
+async def run_comparison_workflow(req: ComparisonWorkflowRequest):
+    """Trigger comparison workflow skill by API."""
+    if len(req.targets) < 2:
+        raise HTTPException(status_code=400, detail="targets must contain at least 2 items")
+    try:
+        import json as _json
+
+        reply = agent.registry.execute("comparison_workflow", {
+            "targets": _json.dumps(req.targets, ensure_ascii=False),
+            "focus": req.focus,
+            "with_tables": req.with_tables,
+        })
+        return ChatResponse(reply=reply)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────
