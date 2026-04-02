@@ -37,6 +37,7 @@ class Agent:
         from skills.page_generate_skill import PageGenerateSkill
         from skills.pdf_export_skill import PDFExportSkill
         from skills.workflow_dashboard_skill import WorkflowDashboardSkill
+        from skills.research_workflow_skill import ResearchWorkflowSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -54,6 +55,7 @@ class Agent:
         self.registry.register(PageGenerateSkill())
         self.registry.register(PDFExportSkill())
         self.registry.register(WorkflowDashboardSkill())
+        self.registry.register(ResearchWorkflowSkill())
 
     # ------------------------------------------------------------------
     # Multimodal entry points
