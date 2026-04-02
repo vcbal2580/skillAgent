@@ -33,6 +33,10 @@ class Agent:
         from skills.wecom_notify_skill import WeComNotifySkill
         from skills.git_summary_skill import GitSummarySkill
         from skills.news_workflow_skill import NewsWorkflowSkill
+        from skills.web_scrape_skill import WebScrapeSkill
+        from skills.page_generate_skill import PageGenerateSkill
+        from skills.pdf_export_skill import PDFExportSkill
+        from skills.workflow_dashboard_skill import WorkflowDashboardSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -46,6 +50,10 @@ class Agent:
         self.registry.register(WeComNotifySkill())
         self.registry.register(GitSummarySkill())
         self.registry.register(NewsWorkflowSkill())
+        self.registry.register(WebScrapeSkill())
+        self.registry.register(PageGenerateSkill())
+        self.registry.register(PDFExportSkill())
+        self.registry.register(WorkflowDashboardSkill())
 
     # ------------------------------------------------------------------
     # Multimodal entry points

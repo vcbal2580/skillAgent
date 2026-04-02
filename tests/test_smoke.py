@@ -14,3 +14,7 @@ def test_register_default_skills():
     skills = agent.registry.list_skills()
     assert "web_search" in skills
     assert "news_workflow" in skills
+    assert "web_scrape" in skills
+    assert "page_generate" in skills
+    assert "pdf_export" in skills
+    assert "workflow_dashboard" in skills
