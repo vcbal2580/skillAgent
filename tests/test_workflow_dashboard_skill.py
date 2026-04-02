@@ -32,3 +32,6 @@ def test_workflow_dashboard_starts_on_fixed_port(monkeypatch):
     assert "http://127.0.0.1:9000" in result
     assert len(manager.calls) == 1
     assert manager.calls[0]["preferred_port"] == 9000
+    html = manager.calls[0]["html_template"]
+    assert "/export/pdf" in html
+    assert "/api/stop" in html

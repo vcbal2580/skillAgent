@@ -22,6 +22,10 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   .name { font-size:1rem; color:#38bdf8; margin:0 0 6px 0; }
   .row { color:#cbd5e1; font-size:0.88rem; margin:4px 0; }
   .link { color:#7dd3fc; text-decoration:none; }
+  .actions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { border:1px solid #33557d; background:#162943; color:#cfe8ff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:0.8rem; }
+  .btn:hover { background:#1a3250; }
+  .btn-danger { border-color:#7f1d1d; background:#3f1a1a; color:#fecaca; }
   .empty { margin:16px; border:1px dashed #2d3f5a; border-radius:10px; padding:16px; color:#94a3b8; }
 </style>
 </head>
@@ -44,9 +48,22 @@ DASHBOARD_HTML = """<!DOCTYPE html>
           <div class=\"row\">端口: ${wf.port}</div>
           <div class=\"row\">刷新: ${Math.round((wf.refresh_seconds || 0) / 60)} 分钟</div>
           <div class=\"row\">更新: ${wf.last_updated || '-'}</div>
-          <div class=\"row\"><a class=\"link\" href=\"${wf.url}\" target=\"_blank\" rel=\"noopener noreferrer\">打开工作流</a></div>
+          <div class=\"actions\">
+            <a class=\"link btn\" href=\"${wf.url}\" target=\"_blank\" rel=\"noopener noreferrer\">打开</a>
+            <a class=\"link btn\" href=\"${wf.url}/export/pdf\" target=\"_blank\" rel=\"noopener noreferrer\">导出PDF</a>
+            <button class=\"btn btn-danger\" onclick=\"stopWorkflow('${wf.name}', '${wf.url}')\">停止</button>
+          </div>
         </article>
       `).join('')}</div>`;
+    }
+
+    async function stopWorkflow(name, url) {
+      try {
+        await fetch(`${url}/api/stop`);
+        await refresh();
+      } catch (_) {
+        alert(`停止失败: ${name}`);
+      }
     }
 
     async function refresh() {

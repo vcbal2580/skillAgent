@@ -161,6 +161,15 @@ class WorkflowInstance:
                     self.wfile.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
                     return
 
+                if self.path == "/api/stop":
+                    workflow.stop()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    payload = {"ok": True, "name": workflow.name, "stopped": True}
+                    self.wfile.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+                    return
+
                 if self.path == "/export/pdf":
                     try:
                         output = workflow.export_pdf()
