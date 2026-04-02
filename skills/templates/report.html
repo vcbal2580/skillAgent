@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block page_script %}
+<script>
+  function renderPage(items) {
+    const root = document.getElementById("content-root");
+    if (!items.length) {
+      root.innerHTML = '<div class="empty">暂无报告段落</div>';
+      return;
+    }
+
+    root.innerHTML = items.map((item, idx) => {
+      const title = item.title || `章节 ${idx + 1}`;
+      const content = item.content || item.body || "";
+      return `
+        <section style="border:1px solid var(--border);background:var(--card);border-radius:10px;padding:16px 18px;margin-bottom:12px;">
+          <h3 style="margin:0 0 10px 0;color:var(--accent);font-size:1rem;">${title}</h3>
+          <div style="line-height:1.8;white-space:pre-wrap;color:#dbeafe;">${content}</div>
+        </section>
+      `;
+    }).join("");
+  }
+</script>
+{% endblock %}

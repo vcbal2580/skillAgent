@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block page_script %}
+<script>
+  function renderPage(items) {
+    const root = document.getElementById("content-root");
+    if (!items.length) {
+      root.innerHTML = '<div class="empty">暂无表格数据</div>';
+      return;
+    }
+
+    const keys = Object.keys(items[0] || {});
+    const thead = keys.map((k) => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--border);">${k}</th>`).join("");
+    const rows = items.map((row) => {
+      return `<tr>${keys.map((k) => `<td style="padding:10px;border-bottom:1px solid #26374b;vertical-align:top;">${row[k] ?? ""}</td>`).join("")}</tr>`;
+    }).join("");
+
+    root.innerHTML = `
+      <div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--card);">
+        <table style="width:100%;border-collapse:collapse;min-width:640px;">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+</script>
+{% endblock %}

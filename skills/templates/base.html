@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }} - SkillAgent Workflow</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: right;
+    }
+    .summary {
+      max-width: 980px;
+      margin: 16px auto 0;
+      padding: 0 18px;
+    }
+    .summary .card {
+      background: #12253d;
+      border: 1px solid #21456f;
+      border-radius: 12px;
+      padding: 14px 16px;
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+    .content {
+      max-width: 980px;
+      margin: 14px auto;
+      padding: 0 18px 28px;
+    }
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+    }
+    a { color: #7dd3fc; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>{{ title }}</h1>
+    <div class="meta">
+      <div>刷新间隔: <span id="refresh-label">{{ refresh_seconds }}</span>s</div>
+      <div>最后更新: <span id="last-updated">-</span></div>
+    </div>
+  </header>
+
+  <section class="summary" id="summary-section" style="display:none;">
+    <div class="card" id="summary-card"></div>
+  </section>
+
+  <main class="content" id="content-root"></main>
+
+  <script>
+    const INITIAL_PAYLOAD = {
+      data: {{ initial_data_json | safe }},
+      summary: {{ initial_summary_json | safe }},
+      last_updated: "{{ initial_last_updated }}",
+      refresh_seconds: {{ refresh_seconds }}
+    };
+
+    function setSummary(summary) {
+      const section = document.getElementById("summary-section");
+      const card = document.getElementById("summary-card");
+      if (!summary) {
+        section.style.display = "none";
+        return;
+      }
+      section.style.display = "block";
+      card.textContent = summary;
+    }
+
+    function setMeta(payload) {
+      document.getElementById("last-updated").textContent = payload.last_updated || "-";
+      document.getElementById("refresh-label").textContent = payload.refresh_seconds || 0;
+    }
+
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/data');
+        if (!res.ok) {
+          return null;
+        }
+        return await res.json();
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function refreshOnce() {
+      const payload = await fetchData();
+      if (!payload) {
+        return;
+      }
+      setSummary(payload.summary || "");
+      setMeta(payload);
+      renderPage(payload.data || []);
+    }
+
+    function bootstrap() {
+      setSummary(INITIAL_PAYLOAD.summary || "");
+      setMeta(INITIAL_PAYLOAD);
+      renderPage(INITIAL_PAYLOAD.data || []);
+      const sec = Number(INITIAL_PAYLOAD.refresh_seconds || 0);
+      if (sec > 0) {
+        setInterval(refreshOnce, sec * 1000);
+      }
+    }
+
+    bootstrap();
+  </script>
+  {% block page_script %}{% endblock %}
+</body>
+</html>

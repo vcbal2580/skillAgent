@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block page_script %}
+<script>
+  function renderPage(items) {
+    const root = document.getElementById("content-root");
+    if (!items.length) {
+      root.innerHTML = '<div class="empty">暂无卡片数据</div>';
+      return;
+    }
+
+    root.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+        ${items.map((item) => {
+          const title = item.title || item.name || "卡片";
+          const body = item.body || item.content || JSON.stringify(item, null, 2);
+          return `
+            <article style="border:1px solid var(--border);background:var(--card);border-radius:10px;padding:14px;">
+              <h3 style="margin:0 0 8px 0;color:var(--accent);font-size:0.96rem;">${title}</h3>
+              <div style="line-height:1.7;white-space:pre-wrap;color:#dbeafe;font-size:0.9rem;">${body}</div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+</script>
+{% endblock %}
