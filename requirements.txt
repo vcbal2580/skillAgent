@@ -6,6 +6,12 @@ uvicorn>=0.27.0
 pyyaml>=6.0.1
 rich>=13.7.0
 
+# ── Workflow engine ──
+httpx>=0.28.0          # async HTTP scraping
+beautifulsoup4>=4.12.0 # HTML parsing
+jinja2>=3.1.0          # workflow page templates
+weasyprint>=60.0       # HTML → PDF export
+
 # ── Multimodal: Document parsing (optional) ──
 pypdf>=4.0.0           # PDF text extraction
 python-docx>=1.1.0     # Word .docx extraction
