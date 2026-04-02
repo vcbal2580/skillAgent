@@ -97,6 +97,25 @@ NEWS_TIMELINE_HTML = r"""<!DOCTYPE html>
   }
   .news-source a { color: var(--muted); text-decoration: none; }
   .news-source a:hover { color: var(--accent); }
+  .age-badge {
+    display: inline-block; font-size: 0.7rem; padding: 2px 8px;
+    border-radius: 4px; margin-left: 8px; font-weight: 500;
+    vertical-align: middle;
+  }
+  .age-today  { background: #059669; color: #d1fae5; }
+  .age-3days  { background: #d97706; color: #fef3c7; }
+  .age-week   { background: #6366f1; color: #e0e7ff; }
+  .age-older  { background: #475569; color: #cbd5e1; }
+  .news-item.item-today::before  { background: #34d399; }
+  .news-item.item-3days::before  { background: #fbbf24; }
+  .news-item.item-week::before   { background: #818cf8; }
+  .news-item.item-older::before  { background: #64748b; }
+  .section-header {
+    font-size: 1rem; font-weight: 600; color: var(--accent);
+    margin: 28px 0 16px 0; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-header:first-child { margin-top: 0; }
   .empty-state {
     text-align: center; padding: 60px 20px; color: var(--muted);
   }
@@ -244,16 +263,44 @@ function renderTimeline(items) {
     return;
   }
   el.className = 'timeline';
-  el.innerHTML = items.map((item, i) => `
-    <div class="news-item" style="animation: fadeIn 0.3s ease ${i*0.05}s both">
-      <div class="news-time">${item.time || ''}</div>
-      <div class="news-title">
-        ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener">${escHtml(item.title)}</a>` : escHtml(item.title)}
+
+  const ageLabels = {
+    today: '📌 今日要闻',
+    '3days': '📰 近三天动态',
+    week: '📋 本周概览',
+    older: '🗂️ 更早资讯'
+  };
+  const ageBadge = {
+    today: '今日', '3days': '3天内', week: '本周', older: '更早'
+  };
+  const ageOrder = ['today', '3days', 'week', 'older'];
+
+  // Group items by age
+  const groups = {};
+  items.forEach(item => {
+    const age = item.age || 'today';
+    if (!groups[age]) groups[age] = [];
+    groups[age].push(item);
+  });
+
+  let html = '';
+  ageOrder.forEach(age => {
+    const list = groups[age];
+    if (!list || !list.length) return;
+    html += `<div class="section-header">${ageLabels[age] || age}（${list.length}条）</div>`;
+    html += list.map((item, i) => `
+      <div class="news-item item-${age}" style="animation: fadeIn 0.3s ease ${i*0.05}s both">
+        <div class="news-time">${item.time || ''}<span class="age-badge age-${age}">${ageBadge[age]}</span></div>
+        <div class="news-title">
+          ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener">${escHtml(item.title)}</a>` : escHtml(item.title)}
+        </div>
+        ${item.body ? `<div class="news-body">${escHtml(item.body)}</div>` : ''}
+        ${item.url ? `<div class="news-source"><a href="${item.url}" target="_blank">${new URL(item.url).hostname}</a></div>` : ''}
       </div>
-      ${item.body ? `<div class="news-body">${escHtml(item.body)}</div>` : ''}
-      ${item.url ? `<div class="news-source"><a href="${item.url}" target="_blank">${new URL(item.url).hostname}</a></div>` : ''}
-    </div>
-  `).join('');
+    `).join('');
+  });
+
+  el.innerHTML = html;
 }
 
 function escHtml(t) {
