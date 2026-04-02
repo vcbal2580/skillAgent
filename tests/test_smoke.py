@@ -19,3 +19,4 @@ def test_register_default_skills():
     assert "pdf_export" in skills
     assert "workflow_dashboard" in skills
     assert "research_workflow" in skills
+    assert "monitor_workflow" in skills
