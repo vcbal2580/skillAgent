@@ -11,7 +11,7 @@ The LLM decides the refresh interval based on the nature of the query.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from skills.base import BaseSkill
 from skills.workflow_service import WorkflowManager
 
@@ -413,59 +413,116 @@ class NewsWorkflowSkill(BaseSkill):
 
     @staticmethod
     def _search_news(query: str, max_results: int = 20) -> list[dict]:
-        """Search for news using DuckDuckGo and return formatted items.
+        """Search for news using DuckDuckGo with time-stratified fetching.
 
-        Strategy: try ddgs.news() first; if a DecodeError / connection error
-        occurs (common on Windows with primp/curl_cffi), fall back to
-        ddgs.text() with a news-oriented query.
+        Fetches news in three time windows (day / week / month) and tags
+        each item with an age category so the summariser can give different
+        levels of detail:
+          - "today"   : published within the last 24 hours
+          - "3days"   : published within the last 3 days
+          - "week"    : published within the last 7 days
+          - "older"   : everything else
         """
         try:
             import os as _os
             from ddgs import DDGS
 
-            results = None
+            now = datetime.now()
+            all_results: list[dict] = []
+            seen_urls: set[str] = set()
 
             old_stderr_fd = _os.dup(2)
             devnull_fd = _os.open(_os.devnull, _os.O_WRONLY)
             _os.dup2(devnull_fd, 2)
             try:
                 with DDGS() as ddgs:
-                    # Attempt 1: ddgs.news() — gives richer metadata
-                    try:
-                        results = list(ddgs.news(query, max_results=max_results, timelimit="d"))
-                    except Exception:
-                        results = None
-
-                    # Attempt 2: fall back to ddgs.text() with news keywords
-                    if not results:
-                        news_query = f"{query} 最新新闻 news"
+                    # ── Phase 1: today's news (timelimit='d') ──
+                    for fetcher, kw in [
+                        (ddgs.news, {"query": query, "max_results": max_results, "timelimit": "d"}),
+                        (ddgs.text, {"query": f"{query} 最新新闻", "max_results": max_results, "timelimit": "d"}),
+                    ]:
                         try:
-                            results = list(ddgs.text(news_query, max_results=max_results, timelimit="d"))
+                            for r in fetcher(**kw):
+                                url = r.get("url") or r.get("href", "")
+                                if url and url not in seen_urls:
+                                    seen_urls.add(url)
+                                    all_results.append(r)
+                            if all_results:
+                                break
                         except Exception:
-                            results = None
+                            continue
+
+                    # ── Phase 2: past week (timelimit='w') ──
+                    for fetcher, kw in [
+                        (ddgs.news, {"query": query, "max_results": max_results, "timelimit": "w"}),
+                        (ddgs.text, {"query": f"{query} 新闻", "max_results": max_results, "timelimit": "w"}),
+                    ]:
+                        try:
+                            for r in fetcher(**kw):
+                                url = r.get("url") or r.get("href", "")
+                                if url and url not in seen_urls:
+                                    seen_urls.add(url)
+                                    all_results.append(r)
+                            break
+                        except Exception:
+                            continue
+
+                    # ── Phase 3: past month as background (timelimit='m') ──
+                    if len(all_results) < max_results:
+                        for fetcher, kw in [
+                            (ddgs.news, {"query": query, "max_results": max_results, "timelimit": "m"}),
+                        ]:
+                            try:
+                                for r in fetcher(**kw):
+                                    url = r.get("url") or r.get("href", "")
+                                    if url and url not in seen_urls:
+                                        seen_urls.add(url)
+                                        all_results.append(r)
+                                break
+                            except Exception:
+                                continue
             finally:
                 _os.dup2(old_stderr_fd, 2)
                 _os.close(old_stderr_fd)
                 _os.close(devnull_fd)
 
-            if not results:
+            if not all_results:
                 return []
 
+            # ── Parse & categorise by age ──
             items = []
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-            for r in results:
-                # ddgs.news fields: title, body, url, date, source, image
-                # ddgs.text fields: title, body, href
+            now_str = now.strftime("%Y-%m-%d %H:%M")
+            cutoff_today = now - timedelta(days=1)
+            cutoff_3days = now - timedelta(days=3)
+            cutoff_week = now - timedelta(days=7)
+
+            for r in all_results:
                 date_str = r.get("date", "")
+                dt = None
                 time_display = ""
                 if date_str:
                     try:
                         dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                        if dt.tzinfo is not None:
+                            dt = dt.replace(tzinfo=None)
                         time_display = dt.strftime("%Y-%m-%d %H:%M")
                     except (ValueError, TypeError):
                         time_display = str(date_str)[:19]
                 if not time_display:
                     time_display = now_str
+
+                # Determine age category
+                if dt:
+                    if dt >= cutoff_today:
+                        age = "today"
+                    elif dt >= cutoff_3days:
+                        age = "3days"
+                    elif dt >= cutoff_week:
+                        age = "week"
+                    else:
+                        age = "older"
+                else:
+                    age = "today"   # no date → assume recent
 
                 items.append({
                     "title": r.get("title", "无标题"),
@@ -473,7 +530,16 @@ class NewsWorkflowSkill(BaseSkill):
                     "url": r.get("url") or r.get("href", ""),
                     "time": time_display,
                     "source": r.get("source", ""),
+                    "age": age,
                 })
+
+            # Sort: newest first
+            def _sort_key(it):
+                try:
+                    return datetime.strptime(it["time"], "%Y-%m-%d %H:%M")
+                except Exception:
+                    return datetime.min
+            items.sort(key=_sort_key, reverse=True)
 
             return items
 
@@ -484,34 +550,74 @@ class NewsWorkflowSkill(BaseSkill):
                 "url": "",
                 "time": datetime.now().strftime("%H:%M"),
                 "source": "",
+                "age": "today",
             }]
 
     @staticmethod
     def _summarize_news(topic: str, items: list[dict]) -> str:
-        """Use the LLM to generate a Chinese summary of the collected news."""
+        """Use the LLM to generate a time-stratified Chinese summary.
+
+        Detail levels:
+        - today  : full detailed summary
+        - 3 days : moderate detail
+        - week   : brief summary
+        - older  : one-line mentions only
+        """
         if not items or (len(items) == 1 and "获取失败" in items[0].get("title", "")):
             return ""
         try:
             from core.llm import LLMClient
 
-            # Build a concise text of all headlines + bodies for the LLM
-            lines = []
-            for i, it in enumerate(items[:30], 1):
-                line = f"{i}. [{it.get('time','')}] {it.get('title','')}"
-                body = it.get("body", "")
-                if body:
-                    line += f" — {body[:120]}"
-                lines.append(line)
-            news_text = "\n".join(lines)
+            # Group by age category
+            groups = {"today": [], "3days": [], "week": [], "older": []}
+            for it in items[:40]:
+                age = it.get("age", "today")
+                groups.setdefault(age, []).append(it)
+
+            def _fmt(lst, max_body=200):
+                lines = []
+                for i, it in enumerate(lst, 1):
+                    line = f"{i}. [{it.get('time','')}] {it.get('title','')}"
+                    body = it.get("body", "")
+                    if body:
+                        line += f" — {body[:max_body]}"
+                    lines.append(line)
+                return "\n".join(lines)
+
+            sections = []
+            if groups["today"]:
+                sections.append(f"【今日新闻（24小时内，共{len(groups['today'])}条）】\n{_fmt(groups['today'], 200)}")
+            if groups["3days"]:
+                sections.append(f"【近三天新闻（共{len(groups['3days'])}条）】\n{_fmt(groups['3days'], 120)}")
+            if groups["week"]:
+                sections.append(f"【近一周新闻（共{len(groups['week'])}条）】\n{_fmt(groups['week'], 80)}")
+            if groups["older"]:
+                sections.append(f"【更早新闻（共{len(groups['older'])}条）】\n{_fmt(groups['older'], 50)}")
+
+            if not sections:
+                return ""
+
+            news_text = "\n\n".join(sections)
 
             prompt = (
-                f"你是一位专业的新闻分析师。以下是关于「{topic}」的最新新闻列表：\n\n"
+                f"你是一位专业的新闻分析师。以下是关于「{topic}」的新闻列表，已按时间分层：\n\n"
                 f"{news_text}\n\n"
-                "请完成以下任务：\n"
-                "1. **总览**：用 2-3 句话概括当前该话题的整体态势\n"
-                "2. **关键要点**：提炼 3-5 个最重要的要点，每个要点一句话\n"
-                "3. **趋势判断**：基于这些新闻，简要判断该话题的走向\n\n"
-                "请用简洁的中文回答，使用 Markdown 格式（标题用 ###）。"
+                "请 **严格按照以下分层结构** 输出总结：\n\n"
+                "### 📌 今日要闻（最近24小时）\n"
+                "对今日新闻做 **详细** 总结，每条重要新闻都要提及，分析其影响和意义。"
+                "如果没有今日新闻，写「暂无今日新闻」。\n\n"
+                "### 📰 近三天动态\n"
+                "用 **适中篇幅** 总结近三天的关键新闻，提炼 3-5 个要点即可。"
+                "如果没有此时段新闻，写「暂无近三天新闻」。\n\n"
+                "### 📋 本周概览\n"
+                "用 **简短** 的方式概括本周新闻趋势，2-3 句话即可。"
+                "如果没有此时段新闻，写「暂无本周新闻」。\n\n"
+                "### 🗂️ 更早资讯\n"
+                "对超过一周的旧闻，仅用一两句话 **简述** 背景即可。"
+                "如果没有更早新闻，可省略本节。\n\n"
+                "### 📊 趋势判断\n"
+                "基于所有新闻，简要判断该话题的走向和发展趋势。\n\n"
+                "请用简洁的中文回答，使用 Markdown 格式。"
             )
 
             llm = LLMClient()
