@@ -5,6 +5,7 @@ Supports text, image (vision), audio (STT), and document upload endpoints.
 
 import os
 import tempfile
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,7 +13,21 @@ from typing import Optional
 from core.agent import Agent
 from core.config import config
 
-app = FastAPI(title="SkillAgent API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global agent
+    from core.i18n import setup as i18n_setup
+    from core.prompt_loader import setup as prompt_setup
+
+    lang = config.get("language", "en")
+    i18n_setup(lang)
+    prompt_setup(lang)
+    agent = Agent()
+    agent.register_default_skills()
+    yield
+
+
+app = FastAPI(title="SkillAgent API", version="0.1.0", lifespan=lifespan)
 
 # CORS for frontend
 app.add_middleware(
@@ -62,19 +77,6 @@ class ComparisonWorkflowRequest(BaseModel):
     targets: list[str]
     focus: str = "overview"
     with_tables: bool = True
-
-
-@app.on_event("startup")
-async def startup():
-    global agent
-    # Initialise language-specific prompts (config already loaded by main.py)
-    from core.i18n import setup as i18n_setup
-    from core.prompt_loader import setup as prompt_setup
-    lang = config.get("language", "en")
-    i18n_setup(lang)
-    prompt_setup(lang)
-    agent = Agent()
-    agent.register_default_skills()
 
 
 @app.post("/chat", response_model=ChatResponse)
