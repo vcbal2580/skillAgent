@@ -210,6 +210,20 @@ async def run_comparison_workflow(req: ComparisonWorkflowRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/workflows/meta/{skill_name}")
+async def get_workflow_metadata(skill_name: str):
+    """Return last run metadata for a workflow-oriented skill."""
+    skill = agent.registry.get(skill_name)
+    if not skill:
+        raise HTTPException(status_code=404, detail=f"Skill '{skill_name}' not found")
+
+    metadata = getattr(skill, "last_run_metadata", None)
+    if metadata is None:
+        raise HTTPException(status_code=404, detail=f"Skill '{skill_name}' has no workflow metadata")
+
+    return {"skill": skill_name, "metadata": metadata}
+
+
 # ──────────────────────────────────────────────────────────
 # Multimodal endpoints
 # ──────────────────────────────────────────────────────────

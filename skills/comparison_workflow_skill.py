@@ -33,6 +33,9 @@ class ComparisonWorkflowSkill(BaseSkill):
         "required": ["targets"],
     }
 
+    def __init__(self):
+        self.last_run_metadata: dict = {}
+
     def execute(self, targets: str, focus: str = "overview", with_tables: bool = True) -> str:
         try:
             parsed = json.loads(targets)
@@ -69,6 +72,14 @@ class ComparisonWorkflowSkill(BaseSkill):
             refresh_seconds=0,
             workflow_name=workflow_name,
         )
+
+        self.last_run_metadata = {
+            "focus": focus,
+            "targets": items,
+            "template": template,
+            "workflow_name": workflow_name,
+            "page": page_result,
+        }
 
         return (
             "对比流程已完成\n"

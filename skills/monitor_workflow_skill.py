@@ -34,6 +34,9 @@ class MonitorWorkflowSkill(BaseSkill):
         "required": ["target"],
     }
 
+    def __init__(self):
+        self.last_run_metadata: dict = {}
+
     def execute(self, target: str, interval_minutes: int = 10, condition: str = "any_change") -> str:
         scraper = WebScrapeSkill()
         page_skill = PageGenerateSkill()
@@ -90,6 +93,14 @@ class MonitorWorkflowSkill(BaseSkill):
         if wf:
             wf.fetch_fn = fetch_fn
             wf._do_refresh()
+
+        self.last_run_metadata = {
+            "target": target,
+            "interval_minutes": interval_minutes,
+            "condition": condition,
+            "workflow_name": workflow_name,
+            "page": page_result,
+        }
 
         return (
             f"监控流程已启动\n"

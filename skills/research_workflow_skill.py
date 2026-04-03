@@ -39,6 +39,9 @@ class ResearchWorkflowSkill(BaseSkill):
     def _max_results(self, depth: str) -> int:
         return {"quick": 3, "standard": 5, "deep": 8}.get(depth, 5)
 
+    def __init__(self):
+        self.last_run_metadata: dict = {}
+
     def _search(self, query: str, max_results: int) -> list[dict]:
         try:
             from ddgs import DDGS
@@ -133,6 +136,15 @@ class ResearchWorkflowSkill(BaseSkill):
             "max_results": max_results,
             "with_pdf": with_pdf,
         })
+
+        self.last_run_metadata = {
+            "query": query,
+            "depth": depth,
+            "max_results": max_results,
+            "pipeline_meta": ctx.get("_pipeline_meta", {}),
+            "page": ctx.get("page", ""),
+            "pdf": ctx.get("pdf", ""),
+        }
 
         return (
             f"研究流程已完成\n"
