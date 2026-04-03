@@ -43,6 +43,21 @@ class _DummyManager:
         self.stop_calls.append(name)
         return bool(self.wf and name == self.wf.name)
 
+    def list_workflows(self):
+        if not self.wf:
+            return []
+        return [{
+            "name": self.wf.name,
+            "port": self.wf.port,
+            "url": f"http://127.0.0.1:{self.wf.port}",
+            "refresh_seconds": self.wf.refresh_seconds,
+            "running": self.wf.running,
+            "last_updated": self.wf.last_updated,
+            "created_at": self.wf.created_at,
+            "item_count": len(self.wf.snapshot["data"]),
+            "summary_preview": self.wf.snapshot["summary"],
+        }]
+
 
 def test_get_workflow_overview(monkeypatch):
     manager = _DummyManager(_DummyWorkflow())
@@ -55,6 +70,19 @@ def test_get_workflow_overview(monkeypatch):
     payload = resp.json()
     assert payload["name"] == "demo_workflow"
     assert payload["status"]["item_count"] == 1
+
+
+def test_list_workflows_includes_item_count(monkeypatch):
+    manager = _DummyManager(_DummyWorkflow())
+    monkeypatch.setattr("skills.workflow_service.WorkflowManager", lambda: manager)
+
+    with TestClient(server.app) as client:
+        resp = client.get("/workflows")
+
+    assert resp.status_code == 200
+    payload = resp.json()["workflows"]
+    assert payload[0]["item_count"] == 1
+    assert payload[0]["summary_preview"] == "ok"
 
 
 def test_refresh_workflow_endpoint(monkeypatch):

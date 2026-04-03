@@ -286,6 +286,7 @@ class WorkflowManager:
     def list_workflows(self) -> list[dict]:
         result = []
         for name, wf in self._workflows.items():
+            snapshot = wf.get_snapshot()
             result.append({
                 "name": name,
                 "port": wf.port,
@@ -294,6 +295,8 @@ class WorkflowManager:
                 "running": wf.running,
                 "last_updated": wf.last_updated,
                 "created_at": wf.created_at,
+                "item_count": len(snapshot.get("data", [])),
+                "summary_preview": str(snapshot.get("summary", ""))[:120],
             })
         return result
 
