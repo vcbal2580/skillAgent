@@ -142,6 +142,16 @@ async def health():
 # Workflow management endpoints
 # ──────────────────────────────────────────────────────────
 
+
+def _get_workflow_or_404(name: str):
+    from skills.workflow_service import WorkflowManager
+
+    manager = WorkflowManager()
+    workflow = manager.get_workflow(name)
+    if not workflow:
+        raise HTTPException(status_code=404, detail=f"Workflow '{name}' not found")
+    return workflow
+
 @app.get("/workflows")
 async def list_workflows():
     """List all running workflow services."""
@@ -154,6 +164,78 @@ async def list_workflows():
 async def stop_workflow(name: str):
     """Stop a running workflow service."""
     from skills.workflow_service import WorkflowManager
+    manager = WorkflowManager()
+    if manager.stop_workflow(name):
+        return {"status": "stopped", "name": name}
+    raise HTTPException(status_code=404, detail=f"Workflow '{name}' not found")
+
+
+@app.get("/workflows/{name}")
+async def get_workflow(name: str):
+    """Get workflow overview and current snapshot."""
+    workflow = _get_workflow_or_404(name)
+    snapshot = workflow.get_snapshot()
+    return {
+        "name": workflow.name,
+        "url": f"http://127.0.0.1:{workflow.port}",
+        "status": {
+            "running": workflow.running,
+            "port": workflow.port,
+            "refresh_seconds": workflow.refresh_seconds,
+            "last_updated": workflow.last_updated,
+            "created_at": workflow.created_at,
+            "item_count": len(snapshot.get("data", [])),
+        },
+        "snapshot": snapshot,
+    }
+
+
+@app.get("/workflows/{name}/status")
+async def get_workflow_status(name: str):
+    """Get workflow runtime status."""
+    workflow = _get_workflow_or_404(name)
+    snapshot = workflow.get_snapshot()
+    return {
+        "name": workflow.name,
+        "running": workflow.running,
+        "port": workflow.port,
+        "refresh_seconds": workflow.refresh_seconds,
+        "last_updated": workflow.last_updated,
+        "created_at": workflow.created_at,
+        "item_count": len(snapshot.get("data", [])),
+    }
+
+
+@app.post("/workflows/{name}/refresh")
+async def refresh_workflow(name: str):
+    """Trigger one manual refresh for workflow."""
+    workflow = _get_workflow_or_404(name)
+    workflow._do_refresh()
+    snapshot = workflow.get_snapshot()
+    return {
+        "status": "refreshed",
+        "name": workflow.name,
+        "last_updated": workflow.last_updated,
+        "item_count": len(snapshot.get("data", [])),
+    }
+
+
+@app.get("/workflows/{name}/export/json")
+async def export_workflow_json(name: str):
+    """Return workflow snapshot as JSON from API layer."""
+    workflow = _get_workflow_or_404(name)
+    snapshot = workflow.get_snapshot()
+    return {
+        "workflow": workflow.name,
+        "snapshot": snapshot,
+    }
+
+
+@app.post("/workflows/{name}/stop")
+async def stop_workflow_post(name: str):
+    """Stop a running workflow service using POST for action semantics."""
+    from skills.workflow_service import WorkflowManager
+
     manager = WorkflowManager()
     if manager.stop_workflow(name):
         return {"status": "stopped", "name": name}
