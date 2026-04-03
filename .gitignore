@@ -25,3 +25,7 @@ persona.md
 # IDE
 .vscode/
 .idea/
+
+# docs: keep offline knowledge note only
+docs/*
+!docs/knowledge-offline.md

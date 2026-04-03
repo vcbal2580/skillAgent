@@ -4,7 +4,7 @@
 
 ### 可扩展的多模态 AI 技能助手
 
-**中文** | [English](README.en.md)
+**English** | [Chinese](README.zh.md)
 
 [![License: MIT + Commons Clause](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
