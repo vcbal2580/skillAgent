@@ -1,4 +1,5 @@
 from skills.research_workflow_skill import ResearchWorkflowSkill
+from skills.workflow_pipeline import PipelineStep, WorkflowPipeline
 
 
 class _DummyDDGS:
@@ -56,3 +57,14 @@ def test_research_workflow_runs_with_pdf(monkeypatch):
 
     assert "PDF exported" in result
     assert "Depth: standard (5 sources)" in result
+
+
+def test_workflow_pipeline_exposes_metadata_for_business_use():
+    pipeline = WorkflowPipeline(
+        name="business_meta",
+        steps=[PipelineStep(name="a", fn=lambda ctx: "ok")],
+    )
+
+    result = pipeline.run()
+    assert result["a"] == "ok"
+    assert result["_pipeline_meta"]["a"]["status"] == "ok"

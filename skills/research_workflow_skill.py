@@ -121,7 +121,7 @@ class ResearchWorkflowSkill(BaseSkill):
             name="research_workflow",
             steps=[
                 PipelineStep("search", step_search),
-                PipelineStep("scrape", step_scrape, depends_on=["search"]),
+                PipelineStep("scrape", step_scrape, depends_on=["search"], run_in_parallel=True),
                 PipelineStep("report", step_report, depends_on=["scrape", "search"]),
                 PipelineStep("page", step_page, depends_on=["report"]),
                 PipelineStep("pdf", step_pdf, depends_on=["page"]),
