@@ -7,7 +7,15 @@ from skills.base import BaseSkill
 
 class WebSearchSkill(BaseSkill):
     name = "web_search"
-    description = "Search the internet for up-to-date information. Use this when you need real-time data, news, or facts you are unsure about."
+    description = (
+        "Search the internet for up-to-date, real-time, or time-sensitive information. "
+        "ALWAYS call this for anything that changes over time — news, sports scores, "
+        "match schedules, prices, exchange rates, weather, rankings, trending topics, "
+        "and any query containing words like 'latest/today/current/now/最新/今天/现在/目前/实时'. "
+        "Use it EVEN IF you think you already know the answer, because your training data "
+        "may be outdated (e.g. whether a tournament is currently running). "
+        "Do not answer time-sensitive factual questions from memory."
+    )
     parameters = {
         "type": "object",
         "properties": {

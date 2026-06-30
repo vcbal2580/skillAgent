@@ -148,6 +148,15 @@ NEWS_TIMELINE_HTML = r"""<!DOCTYPE html>
   .summary-loading {
     color: var(--muted); font-style: italic; font-size: 0.88rem;
   }
+  .error-card {
+    background: rgba(220, 38, 38, 0.12); border: 1px solid #dc2626;
+    color: #fca5a5; border-radius: 10px; padding: 14px 18px;
+    margin-bottom: 20px; font-size: 0.88rem; line-height: 1.6;
+  }
+  .error-card .error-detail {
+    color: var(--muted); font-size: 0.78rem; margin-top: 6px;
+    word-break: break-all;
+  }
   .refresh-bar {
     text-align: center; padding: 16px; color: var(--muted);
     font-size: 0.8rem;
@@ -188,6 +197,7 @@ NEWS_TIMELINE_HTML = r"""<!DOCTYPE html>
   </div>
 </div>
 <div class="container">
+  <div id="error-section"></div>
   <div id="summary-section"></div>
   <div id="timeline" class="loading">
     <div class="spinner"></div>
@@ -208,12 +218,37 @@ async function fetchData() {
     const json = await resp.json();
     refreshSeconds = json.refresh_seconds || 3600;
     countdown = refreshSeconds;
-    document.getElementById('update-time').textContent = '更新于 ' + json.last_updated;
+    const status = json.status || 'ok';
+    const data = json.data || [];
+
+    // Status indicator in the header
+    const statusText = document.getElementById('status-text');
+    if (status === 'loading') {
+      statusText.textContent = '首次抓取中';
+    } else if (status === 'error') {
+      statusText.textContent = data.length ? '刷新失败(显示历史数据)' : '抓取失败';
+    } else {
+      statusText.textContent = '运行中';
+    }
+    document.getElementById('update-time').textContent =
+      json.last_updated ? ('更新于 ' + json.last_updated) : '尚未更新';
+
+    renderError(status, json.last_error || '', data.length);
     renderSummary(json.summary || '');
-    renderTimeline(json.data || []);
+    renderTimeline(data, status);
   } catch(e) {
     document.getElementById('status-text').textContent = '连接失败';
   }
+}
+
+function renderError(status, msg, hasData) {
+  const el = document.getElementById('error-section');
+  if (status !== 'error' || !msg) {
+    el.innerHTML = '';
+    return;
+  }
+  const note = hasData ? '本次刷新失败，下方为上一次成功抓取的内容。' : '抓取失败，将在下次刷新时重试。';
+  el.innerHTML = `<div class="error-card">⚠️ ${note}<div class="error-detail">${escHtml(msg)}</div></div>`;
 }
 
 function renderSummary(md) {
@@ -256,10 +291,19 @@ function mdToHtml(md) {
   return '<p>' + html + '</p>';
 }
 
-function renderTimeline(items) {
+function renderTimeline(items, status) {
   const el = document.getElementById('timeline');
   if (!items.length) {
-    el.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>暂无新闻数据，等待下次刷新...</div></div>';
+    if (status === 'loading') {
+      el.className = 'loading';
+      el.innerHTML = '<div class="spinner"></div><div>正在获取最新资讯，请稍候...</div>';
+    } else if (status === 'error') {
+      el.className = 'empty-state';
+      el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div>抓取失败，等待下次刷新重试...</div></div>';
+    } else {
+      el.className = 'empty-state';
+      el.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>暂无新闻数据，等待下次刷新...</div></div>';
+    }
     return;
   }
   el.className = 'timeline';
@@ -455,6 +499,7 @@ class NewsWorkflowSkill(BaseSkill):
             f"• **刷新间隔**: 每 {refresh_minutes} 分钟\n"
             f"• **工作流名称**: {wf_name}\n\n"
             f"请在浏览器中打开 {url} 查看实时新闻时间轴。\n"
+            f"首次新闻抓取与 AI 总结正在后台进行，页面会显示加载状态并在完成后自动刷新（通常 10~60 秒）。\n"
             f"使用 `stop` 动作可停止该服务。"
         )
 
