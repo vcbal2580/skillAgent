@@ -1,0 +1,98 @@
+<mxfile host="app.diagrams.net" modified="2026-04-02T00:00:00.000Z" agent="5.0" version="24.7.17" type="device">
+  <diagram id="skillagent-arch-cn-detailed" name="SkillAgent 中文详解架构图">
+    <mxGraphModel dx="1920" dy="1080" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="SkillAgent 架构图（中文详解版）&#xa;说明：本图覆盖请求入口、编排层、技能层、数据层、配置层与多模态链路" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="820" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="legend" value="图例&#xa;蓝色：入口与多模态输入&#xa;黄色：核心编排与策略控制&#xa;紫色：工具/技能调用层&#xa;橙色：持久化存储层&#xa;灰色虚线：配置与提示词对运行时的影响" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="860" y="20" width="500" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="input" value="用户输入层&#xa;输入类型：文本 / 图像 / 音频 / 文档&#xa;目标：把不同模态统一汇入 Agent 编排流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="300" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="entry" value="入口层（应用边界）&#xa;CLI：main.py（命令行交互）&#xa;API：api/server.py（FastAPI）&#xa;职责：参数校验、路由分发、格式标准化" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="170" width="340" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="agent" value="编排核心：core/agent.py&#xa;职责：&#xa;1) 组装上下文并调用 LLM&#xa;2) 解析 tool_calls 并调度技能&#xa;3) 执行多轮迭代直到无工具调用或达到上限&#xa;关键参数：max_tool_calls（默认 5）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="170" width="390" height="180" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="context" value="上下文管理：core/context.py&#xa;职责：维护会话历史、裁剪历史窗口&#xa;关键机制：每次 get_messages() 时注入系统当前时间&#xa;目的：降低模型日期/年份幻觉风险&#xa;示例：当前系统时间：YYYY年MM月DD日 HH:MM 星期X" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="160" width="420" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="llm" value="模型网关：core/llm.py&#xa;职责：封装 OpenAI 兼容调用（chat / vision / tool calling）&#xa;输入：messages + tools schema&#xa;输出：assistant message（可能含 tool_calls）&#xa;兼容：openai / deepseek / zhipu / qwen / ollama" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="350" width="420" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="registry" value="技能注册与调度：skills/registry.py&#xa;职责：&#xa;1) 注册技能实例&#xa;2) 导出 OpenAI tool 定义&#xa;3) 按函数名执行对应技能&#xa;4) 捕获技能异常并回填结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;verticalAlign=top;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="400" width="390" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="skills" value="技能层（业务能力）&#xa;web_search：联网检索实时信息&#xa;knowledge_manage：知识库增删查列&#xa;get_datetime：时间日期与时区&#xa;get_weather：天气查询&#xa;fortune_divination / tarot / today_luck / huangli：娱乐向能力&#xa;wecom_notify：企业微信消息&#xa;git_daily_summary：Git 提交总结&#xa;news_workflow：本地新闻时间轴服务（分层抓取+AI总结）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="560" width="620" height="260" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="workflow" value="工作流服务：skills/workflow_service.py&#xa;能力：启动本地 HTTP 服务并定时刷新数据&#xa;用于：news_workflow 的实时时间轴页面&#xa;接口：/api/data /api/status /" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="850" width="300" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="knowledge_manager" value="知识管理：knowledge/knowledge_manager.py&#xa;职责：save/search/list/delete/count 统一接口&#xa;用于：knowledge_manage 与文档入库场景" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="680" width="360" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vector" value="向量存储：ChromaDB&#xa;路径：data/chromadb&#xa;用途：语义检索与知识召回" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="440" y="700" width="230" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sqlite" value="会话存储：SQLite&#xa;路径：data/agent.db&#xa;用途：会话消息与历史记录持久化" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="700" y="700" width="230" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="stt" value="语音转写层：core/stt/*&#xa;可选引擎：disabled / openai / dashscope&#xa;输入：音频文件或麦克风录音&#xa;输出：文本，进入标准 chat 流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="360" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="doc" value="文档解析层：skills/document_skill.py&#xa;支持：PDF / DOCX / XLSX / XLS / EML / HTML / TXT&#xa;能力：抽取文本、分块入库、结合问题问答" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="360" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="config" value="配置与提示词层&#xa;config.yaml：运行参数（模型、端口、STT、知识库等）&#xa;prompts/zh.yaml|en.yaml：技能描述覆盖&#xa;persona.md：系统角色风格基线&#xa;i18n：多语言消息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="860" width="480" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_notes" value="主流程说明&#xa;1) 入口层接收请求并交给 Agent&#xa;2) Agent 通过 Context 组装消息（含当前系统时间）&#xa;3) 调用 LLM，若返回 tool_calls 则交给 Registry&#xa;4) Registry 执行技能并回填工具结果&#xa;5) Agent 再次调用 LLM，循环直到产出最终回答" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="860" width="690" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" value="统一请求入口" style="endArrow=block;endFill=1;html=1;strokeWidth=2;" edge="1" parent="1" source="input" target="entry"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="调用编排器" style="endArrow=block;endFill=1;html=1;strokeWidth=2;" edge="1" parent="1" source="entry" target="agent"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="构造 messages" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="agent" target="context"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="模型推理" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="agent" target="llm"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="返回 tool_calls" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="llm" target="registry"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="按名称调技能" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="registry" target="skills"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="工具结果回填" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="skills" target="agent"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e8" value="知识写入/检索" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="skills" target="knowledge_manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="knowledge_manager" target="vector"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" value="会话持久化" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="agent" target="sqlite"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e11" value="音频链路" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="entry" target="stt"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" value="文档链路" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="entry" target="doc"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="触发本地工作流" style="endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="skills" target="workflow"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e14" value="运行参数" style="endArrow=block;endFill=1;html=1;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="config" target="agent"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e15" value="模型参数" style="endArrow=block;endFill=1;html=1;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="config" target="llm"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e16" value="工具描述覆盖" style="endArrow=block;endFill=1;html=1;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="config" target="registry"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
