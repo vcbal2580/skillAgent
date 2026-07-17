@@ -28,6 +28,7 @@ class LLMClient:
         self.stt_model = config.get("stt.openai_model", "whisper-1")
         self.temperature = config.get("llm.temperature", 0.7)
         self.max_tokens = config.get("llm.max_tokens", 2048)
+        self.last_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     def chat(self, messages: list, tools: list = None, tool_choice: str = "auto") -> object:
         """
@@ -53,6 +54,7 @@ class LLMClient:
             kwargs["tool_choice"] = tool_choice
 
         response = self.client.chat.completions.create(**kwargs)
+        self.last_usage = self._extract_usage(response)
         return response.choices[0].message
 
     def chat_with_image(
@@ -106,6 +108,7 @@ class LLMClient:
             kwargs["tool_choice"] = tool_choice
 
         response = self.client.chat.completions.create(**kwargs)
+        self.last_usage = self._extract_usage(response)
         return response.choices[0].message
 
     def transcribe_audio(self, audio_path: str, language: str = None) -> str:
@@ -147,4 +150,16 @@ class LLMClient:
         return {
             "type": "image_url",
             "image_url": {"url": f"data:image/{mime};base64,{b64}"},
+        }
+
+    @staticmethod
+    def _extract_usage(response: object) -> dict:
+        """Extract token usage from an OpenAI-compatible response object."""
+        usage = getattr(response, "usage", None)
+        if not usage:
+            return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        return {
+            "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+            "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+            "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
         }

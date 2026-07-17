@@ -34,6 +34,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     transcribed: Optional[str] = None  # filled for audio requests
+    usage: Optional[dict] = None
 
 
 class ImageChatRequest(BaseModel):
@@ -66,7 +67,7 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     try:
         reply = agent.chat(req.message)
-        return ChatResponse(reply=reply)
+        return ChatResponse(reply=reply, usage=agent.last_usage)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -154,7 +155,7 @@ async def chat_with_image(req: ImageChatRequest):
             user_input=req.message or "请描述这张图片",
             image_source=req.image_url,
         )
-        return ChatResponse(reply=reply)
+        return ChatResponse(reply=reply, usage=agent.last_usage)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -178,7 +179,7 @@ async def chat_with_audio(
             (m["content"] for m in reversed(msgs) if m["role"] == "user" and isinstance(m["content"], str)),
             None,
         )
-        return ChatResponse(reply=reply, transcribed=transcribed)
+        return ChatResponse(reply=reply, transcribed=transcribed, usage=agent.last_usage)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

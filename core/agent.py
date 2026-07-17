@@ -54,6 +54,7 @@ class Agent:
         self.context = ContextManager()
         self.registry = SkillRegistry()
         self.max_tool_calls = config.get("agent.max_tool_calls", 5)
+        self.last_usage = self._zero_usage()
 
     def register_default_skills(self):
         """Register all built-in skills."""
@@ -113,6 +114,7 @@ class Agent:
             user_input: The text prompt from the user.
             image_source: URL or local file path of the image.
         """
+        usage_total = self._zero_usage()
         self.context.add_user_message(user_input)
         tools = self.registry.get_openai_tools(self._select_tool_names(user_input))
 
@@ -122,15 +124,15 @@ class Agent:
             image_source=image_source,
             tools=tools if tools else None,
         )
+        self._accumulate_usage(usage_total)
 
         if not response_msg.tool_calls:
             answer = response_msg.content or ""
-            self.context.add_assistant_message(answer)
-            return answer
+            return self._finish_answer(answer, usage_total)
 
         # If the vision response triggered tool calls, hand off to normal loop
         self.context.add_assistant_tool_calls(response_msg)
-        return self._tool_call_loop(response_msg, tools)
+        return self._tool_call_loop(initial_response_msg=response_msg, tools=tools, usage_total=usage_total)
 
     def chat_with_audio(self, audio_path: str, language: str = None) -> str:
         """Transcribe audio then respond as normal text chat.
@@ -151,6 +153,7 @@ class Agent:
         Process user input and return agent response.
         Handles multi-turn tool calling automatically.
         """
+        usage_total = self._zero_usage()
         self.context.add_user_message(user_input)
 
         tools = self.registry.get_openai_tools(self._select_tool_names(user_input))
@@ -164,25 +167,25 @@ class Agent:
                 messages=self.context.get_messages(),
                 tools=tools if tools else None,
             )
+            self._accumulate_usage(usage_total)
 
             # If no tool calls, we have the final answer
             if not response_msg.tool_calls:
                 answer = response_msg.content or ""
-                self.context.add_assistant_message(answer)
-                return answer
+                return self._finish_answer(answer, usage_total)
 
             # Process tool calls
             self.context.add_assistant_tool_calls(response_msg)
             self._execute_tool_calls(response_msg)
 
         # Exhausted tool-call iterations - ask LLM for a final answer without tools
-        return self._finalize()
+        return self._finalize(usage_total)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _tool_call_loop(self, initial_response_msg, tools: list) -> str:
+    def _tool_call_loop(self, initial_response_msg, tools: list, usage_total: dict) -> str:
         """Continue tool-call iteration from an existing response message."""
         self._execute_tool_calls(initial_response_msg)
         iterations = 1
@@ -192,13 +195,13 @@ class Agent:
                 messages=self.context.get_messages(),
                 tools=tools if tools else None,
             )
+            self._accumulate_usage(usage_total)
             if not response_msg.tool_calls:
                 answer = response_msg.content or ""
-                self.context.add_assistant_message(answer)
-                return answer
+                return self._finish_answer(answer, usage_total)
             self.context.add_assistant_tool_calls(response_msg)
             self._execute_tool_calls(response_msg)
-        return self._finalize()
+        return self._finalize(usage_total)
 
     def _execute_tool_calls(self, response_msg) -> None:
         """Execute all tool calls in a response message and add results to context."""
@@ -215,16 +218,38 @@ class Agent:
                 content=str(result),
             )
 
-    def _finalize(self) -> str:
+    def _finalize(self, usage_total: dict) -> str:
         """Ask LLM for a final answer without tools after exhausting iterations."""
         from core.i18n import _
         response_msg = self.llm.chat(
             messages=self.context.get_messages(),
             tools=None,
         )
+        self._accumulate_usage(usage_total)
         answer = response_msg.content or _("Sorry, something went wrong. Please try again.")
-        self.context.add_assistant_message(answer)
-        return answer
+        return self._finish_answer(answer, usage_total)
+
+    def _zero_usage(self) -> dict:
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    def _accumulate_usage(self, usage_total: dict) -> None:
+        usage = self.llm.last_usage or {}
+        usage_total["prompt_tokens"] += int(usage.get("prompt_tokens", 0) or 0)
+        usage_total["completion_tokens"] += int(usage.get("completion_tokens", 0) or 0)
+        usage_total["total_tokens"] += int(usage.get("total_tokens", 0) or 0)
+
+    @staticmethod
+    def _format_usage(usage_total: dict) -> str:
+        return (
+            f"\n\n[Token Usage] prompt={usage_total['prompt_tokens']}, "
+            f"completion={usage_total['completion_tokens']}, total={usage_total['total_tokens']}"
+        )
+
+    def _finish_answer(self, answer: str, usage_total: dict) -> str:
+        self.last_usage = usage_total.copy()
+        final_answer = (answer or "") + self._format_usage(usage_total)
+        self.context.add_assistant_message(final_answer)
+        return final_answer
 
     def reset(self):
         """Reset conversation history."""
