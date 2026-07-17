@@ -87,3 +87,16 @@ get_weather:
   parameters:
     city: "Optional city name in any language, e.g. 'Shenzhen', '深圳', 'Tokyo'. Omit to auto-detect from IP."
     days: "Number of forecast days to include (1-7). Default: 3."
+
+work_cv_manage:
+  description: >-
+    Analyze local work-project documents and generate CV artifacts.
+    Use this tool when the user asks to summarize work experience in timeline order,
+    generate or refresh a resume, or write outputs into docs/cv.
+    Default input folder is docs/original_work and output folder is docs/cv.
+  parameters:
+    action: "Action: list_files | analyze | generate_latest_cv"
+    source_dir: "Input directory (default: docs/original_work)"
+    output_dir: "Output directory (default: docs/cv)"
+    save_date: "Optional date stamp in YYYYMMDD format"
+    target_role: "Optional target role used in the generated CV"

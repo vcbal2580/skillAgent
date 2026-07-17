@@ -80,3 +80,15 @@ get_weather:
   parameters:
     city: "可选。城市名称，支持中英文，例如：深圳、北京、Shanghai、Tokyo。不填则自动根据 IP 定位"
     days: "预报天数（1-7），默认 3 天"
+
+work_cv_manage:
+  description: >-
+    分析本地工作项目文档并生成简历相关文档。
+    当用户提到「整理工作经历」「按时间轴总结」「生成/更新简历」「输出到 docs/cv」时优先调用此工具。
+    默认从 docs/original_work 读取材料，输出到 docs/cv。
+  parameters:
+    action: "动作：list_files=列出输入文档；analyze=生成时间轴；generate_latest_cv=生成最新简历与时间轴"
+    source_dir: "输入目录，默认 docs/original_work"
+    output_dir: "输出目录，默认 docs/cv"
+    save_date: "可选，输出日期标签 YYYYMMDD，不填则用当天"
+    target_role: "可选，目标岗位名称，用于简历标题与简介"

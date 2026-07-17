@@ -36,9 +36,13 @@ class SkillRegistry:
         except Exception as e:
             return f"Error executing {name}: {str(e)}"
 
-    def get_openai_tools(self) -> list[dict]:
-        """Get all skills as OpenAI tool definitions."""
-        return [skill.get_tool_definition() for skill in self._skills.values()]
+    def get_openai_tools(self, names: list[str] | None = None) -> list[dict]:
+        """Get OpenAI tool definitions for all skills or a filtered subset."""
+        if names is None:
+            skills = self._skills.values()
+        else:
+            skills = [self._skills[name] for name in names if name in self._skills]
+        return [skill.get_tool_definition() for skill in skills]
 
     def list_skills(self) -> list[str]:
         """List all registered skill names."""

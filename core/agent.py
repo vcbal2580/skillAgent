@@ -13,6 +13,42 @@ from skills.registry import SkillRegistry
 class Agent:
     """Main agent that orchestrates LLM calls with tool/skill execution."""
 
+    _ALWAYS_ON_TOOLS = ["web_search", "knowledge_manage", "get_datetime"]
+    _SCENE_TOOL_KEYWORDS = [
+        (
+            ["work_cv_manage"],
+            ["简历", "工作经历", "时间轴", "项目经历", "docs/cv", "原始工作", "工作项目", "cv", "resume"],
+        ),
+        (
+            ["git_daily_summary"],
+            ["git", "commit", "提交", "日报", "周报", "代码总结", "提交总结"],
+        ),
+        (
+            ["news_workflow", "web_search"],
+            ["新闻", "热点", "资讯", "舆情", "时间轴", "最新动态", "实时新闻"],
+        ),
+        (
+            ["get_weather"],
+            ["天气", "气温", "下雨", "预报", "温度"],
+        ),
+        (
+            ["wecom_notify"],
+            ["企业微信", "wecom", "通知群里", "推送消息", "发消息给群"],
+        ),
+        (
+            ["knowledge_manage"],
+            ["记住", "保存知识", "知识库", "查一下之前", "回忆", "存入"],
+        ),
+        (
+            ["document_skill"],
+            ["文档", "pdf", "docx", "xlsx", "excel", "word", "表格", "解析文件"],
+        ),
+        (
+            ["fortune_divination", "tarot_career_reading", "today_luck", "huangli_today"],
+            ["算卦", "塔罗", "运势", "黄历", "今日宜", "占卜"],
+        ),
+    ]
+
     def __init__(self):
         self.llm = LLMClient()
         self.context = ContextManager()
@@ -33,6 +69,7 @@ class Agent:
         from skills.wecom_notify_skill import WeComNotifySkill
         from skills.git_summary_skill import GitSummarySkill
         from skills.news_workflow_skill import NewsWorkflowSkill
+        from skills.work_cv_skill import WorkCVSkill
 
         self.registry.register(WebSearchSkill())
         self.registry.register(KnowledgeSkill())
@@ -46,6 +83,24 @@ class Agent:
         self.registry.register(WeComNotifySkill())
         self.registry.register(GitSummarySkill())
         self.registry.register(NewsWorkflowSkill())
+        self.registry.register(WorkCVSkill())
+
+    def _select_tool_names(self, user_input: str) -> list[str]:
+        """Choose a small relevant tool set for the current user message."""
+        text = (user_input or "").lower()
+        selected: list[str] = []
+
+        for tool_name in self._ALWAYS_ON_TOOLS:
+            if tool_name not in selected:
+                selected.append(tool_name)
+
+        for tool_names, keywords in self._SCENE_TOOL_KEYWORDS:
+            if any(keyword.lower() in text for keyword in keywords):
+                for tool_name in tool_names:
+                    if tool_name not in selected:
+                        selected.append(tool_name)
+
+        return selected
 
     # ------------------------------------------------------------------
     # Multimodal entry points
@@ -59,7 +114,7 @@ class Agent:
             image_source: URL or local file path of the image.
         """
         self.context.add_user_message(user_input)
-        tools = self.registry.get_openai_tools()
+        tools = self.registry.get_openai_tools(self._select_tool_names(user_input))
 
         # First call uses vision model with image attached
         response_msg = self.llm.chat_with_image(
@@ -98,7 +153,7 @@ class Agent:
         """
         self.context.add_user_message(user_input)
 
-        tools = self.registry.get_openai_tools()
+        tools = self.registry.get_openai_tools(self._select_tool_names(user_input))
         iterations = 0
 
         while iterations < self.max_tool_calls:
